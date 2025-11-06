@@ -1,8 +1,6 @@
 {
-  "name": "moodleplusplus",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.76.1"
-  }
+  "name": "Moodleplusplus",
+  "private": true,
+  "type": "module",
+  "packageManager": "yarn@4.10.3"
 }

@@ -1,0 +1,25 @@
+# Environment
+.env
+.DS_Store
+
+# Dependencies
+/node_modules
+/package-lock.json
+
+# Yarn (package manager)
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# Build
+/build
+/public/build
+/server.js
+/server.js.map
+
+Project Framework: Remix (React-Router v7)
+.react-router/
