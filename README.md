@@ -1,6 +1,6 @@
 # Project Structure
 
-```
+```bash
 Moodleplusplus/
 ├── src/                        # Source code
 │
@@ -38,37 +38,11 @@ Moodleplusplus/
 ├── public/                     # (Frontend) File tĩnh (images, fonts, favicon.ico)
 │ └── favicon.ico
 │
-├── .env                        # (Bảo mật) Chứa API keys - KHÔNG commit lên Git
-├── .gitignore                  # Bỏ qua .env, node_modules...
-├── package.json                # Quản lý dependencies và scripts
-├── README.md                   # Hướng dẫn
-├── tsconfig.json               # Cấu hình TypeScript
-└── vite.config.ts              # Cấu hình Vite
+├── .env # (Bảo mật) Chứa API keys - KHÔNG commit lên Git
+├── .env.example # (An toàn) File mẫu cho .env - Commit lên Git
+├── .gitignore # Rất quan trọng: Bỏ qua .env, node_modules...
+├── package.json # Quản lý các gói (dependencies) và scripts
+├── README.md # Hướng dẫn cho nhóm: cách cài đặt, khởi chạy...
+├── tsconfig.json # Cấu hình TypeScript
+└── vite.config.ts # Cấu hình Vite
 ```
-
-# Detailed Instruction
-
-Mục này giúp các thành viên trong nhóm hiểu cách cài đặt và khởi chạy dự án.
-
-1. **Cài đặt dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-2. **Khởi chạy server (development):**
-
-   ```bash
-   npm run dev
-   ```
-
-3. **Build production:**
-
-   ```bash
-   npm run build
-   ```
-
-4. **Cấu hình môi trường (.env):**
-   - Sao chép file `.env.example` thành `.env`
-   - Điền các giá trị cần thiết (API keys, Supabase URL, v.v.)
-   - Không commit file `.env` lên GitHub
