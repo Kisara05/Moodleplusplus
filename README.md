@@ -1,5 +1,6 @@
 # Project Structure
 
+```bash
 Moodleplusplus/
 ├── src/ Source code
 │ │
@@ -46,3 +47,4 @@ Moodleplusplus/
 ├── README.md # Hướng dẫn cho nhóm: cách cài đặt, khởi chạy...
 ├── tsconfig.json # Cấu hình TypeScript
 └── vite.config.ts # Cấu hình Vite
+```
