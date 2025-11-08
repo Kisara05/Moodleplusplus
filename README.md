@@ -1,4 +1,4 @@
-# Project Structure
+# Project Structure (Sample structure, may need adjustment for each task later)
 
 ```bash
 Moodleplusplus/
@@ -21,18 +21,29 @@ Moodleplusplus/
 │ │ │    route("admin/posts", "routes/_public.admin.posts.tsx"),
 │ │ │  ] satisfies RouteConfig;
 │ │ │
-│ │ ├── _index.tsx              # Trang chủ (route "/")
-│ │ └── admin/                  # Nhóm route cho /admin
-│ │     ├── _layout.tsx         # Layout CHUNG cho tất cả các trang /admin/*
+│ │ ├── _public.tsx             # Layout chính của Server
+│ │ ├── _public._index.tsx      # Trang chủ (route "/")
+│ │ └── _public/admin           # Route kết nối chính đến Admin
+| │ └── _public/course          # Route kết nối chính đến Course
+| │ └── _public/user            # Route kết nối chính đến User
+| │ └── _public/login, register # Route kết nối Authentication
+| │ └── _public/.../...         # Folder cho từng mục quản lý
+|
 │ │
 │ ├── services/                 # (Backend) Nơi chứa logic xử lý server-side
 │ │ ├── supabase.server.ts      # Cài đặt kết nối Supabase
 │ │ ├── auth.server.ts          # Logic đăng nhập, đăng ký, session...
 │ │ └── user.server.ts          # Logic quản lý CSDL cho user
+| │
+| ├── types/                    # Định nghĩa các Interface dùng chung
+│ │ ├── index.ts
+│ │ ├── user.ts
 │ │
-│ ├── styles/                   # (Frontend) Chứa file CSS chung
-│ │ └── app.css                 # File CSS toàn cục (nếu không dùng Tailwind)
-│ │
+│ │── styles/                   # Thiết kế CSS
+| │ ├── app.css
+│ │ ├── button.modules.css
+| │
+│ │── routes.ts                 # File chứa đường dẫn chung cho toàn bộ server
 │ └── root.tsx                  # File layout GỐC của toàn bộ ứng dụng
 │
 ├── public/                     # (Frontend) File tĩnh (images, fonts, favicon.ico)
@@ -45,4 +56,8 @@ Moodleplusplus/
 ├── README.md # Hướng dẫn cho nhóm: cách cài đặt, khởi chạy...
 ├── tsconfig.json # Cấu hình TypeScript
 └── vite.config.ts # Cấu hình Vite
+└── .pnp.cjs # Yarn
+└── .pnp.loader.mjs
+└── yarnrc.yml
+└── eslint.config.js #
 ```

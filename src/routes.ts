@@ -1,4 +1,4 @@
-const r = (file: string) => () => import(file);
+//const r = (file: string) => () => import(file);
 
 type RouteConfig = {
   path: string;
@@ -24,7 +24,7 @@ export default [
     file: "src/routes/_public.courses.$courseID.tsx",
   },
   // Nhóm Admin (lồng 2 lớp)
-  { path: "/admin", file: "src/routes/_public.admin.layout.tsx" },
+  { path: "/admin", file: "src/routes/_public.admin/layout.tsx" },
   {
     path: "/admin",
     file: "src/routes/_public.admin.tsx",
