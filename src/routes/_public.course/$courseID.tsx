@@ -1,7 +1,7 @@
 // import type { LoaderFunctionArgs } from "@remix-run/node";
 // import { json } from "@remix-run/node";
 // import { useLoaderData } from "@remix-run/react";
-// // import { getCourseById } from "~/services/course.server";
+// import { getCourseById } from "~/services/course.server";
 
 // export async function loader({ params }: LoaderFunctionArgs) {
 //   const courseId = params.courseId;
