@@ -1,7 +1,7 @@
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
-import { NewsSection } from "~/components/NewsSection";
-import { Sidebar } from "~/components/Sidebar";
+// import { NewsSection } from "~/components/NewsSection";
+// import { Sidebar } from "~/components/Sidebar";
 import type { Route } from "~/types/index";
 
 export function meta(_: Route.MetaArgs) {
@@ -21,14 +21,14 @@ export default function Home() {
       }}
     >
       <Header />
-      <Hero />
+      {/* <Hero /> */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <NewsSection />
+            {/* <NewsSection /> */}
           </div>
           <div className="lg:col-span-1">
-            <Sidebar />
+            {/* <Sidebar /> */}
           </div>
         </div>
       </div>
