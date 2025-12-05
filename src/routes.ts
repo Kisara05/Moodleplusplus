@@ -1,4 +1,4 @@
-//const r = (file: string) => () => import(file);
+const r = (file: string) => () => import(file);
 
 type RouteConfig = {
   path: string;
