@@ -1,10 +1,11 @@
 import { supabase } from "./supabase.server";
 import { requireUserId } from "./auth.server";
 import { json } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 
 // // File này sẽ chứa logic backend (CRUD) cho Khóa học
 
-export async function loader({ request, params }: LoaderArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
     // Backend logic để load dữ liệu Course cho trang Course Detail
     // Step 0: Get Params & User ID
     if (!params.id || isNaN(Number(params.id))) {
@@ -17,8 +18,19 @@ export async function loader({ request, params }: LoaderArgs) {
     // Step 1: Fetch Enrollment Data
     // tạm thời data chỉ mới trả về section_id, về sau sẽ bổ sung thêm các trường thông tin khác để load trong Course
     const [r1, r2] = await Promise.all([
-        supabase.from<Row>("gradereport").select("section_id").eq("student_id", userId).eq("section_id", sectionId"),
-        supabase.from<Row>("teaching").select("section_id").eq("instructor_id", userId).eq("section_id", sectionId"),
+    supabase
+        .from("gradereport") // 1. Remove <Row> here
+        .select("section_id")
+        .eq("student_id", userId)
+        .eq("section_id", sectionId)
+        .returns<Row[]>(),   // 2. Add .returns<Row[]>() here
+
+    supabase
+        .from("teaching")    // 1. Remove <Row> here
+        .select("section_id")
+        .eq("instructor_id", userId)
+        .eq("section_id", sectionId)
+        .returns<Row[]>(),   // 2. Add .returns<Row[]>() here
     ]);
 
     if (r1.error) throw r1.error;
@@ -118,7 +130,7 @@ export async function getCourseGrades(sectionId: number) {
     return data;
 }
 
-export async function action({ request, params }: ActionArgs){
+export async function action({ request, params }: ActionFunctionArgs){
     // Backend logic để xử lý các form action từ trang Course Detail
     const sectionId = Number(params.id);
     const userId = await requireUserId(request);
@@ -135,9 +147,11 @@ export async function getCourseList(userId: string) {
         school_year: string;
     };
 
-    const { data, error } = await supabase.rpc<CourseRow>("get_user_courses", {
-        p_user_id: userId,
-    });
+    const { data, error } = await supabase
+        .rpc("get_user_courses", {
+            p_user_id: userId,
+        })
+        .returns<CourseRow[]>();
 
     if (error) {
             if (process.env.NODE_ENV === "production") {
