@@ -1,6 +1,8 @@
 import { useState } from "react";
 // import { Sidebar } from "../components/admin";
-import type { Route } from "./+types/_public.admin";
+// import type { Route } from "./+types/_public.admin";
+import { Outlet } from "@remix-run/react";
+import { Route } from "~/types";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -16,10 +18,8 @@ export default function AdminDashboard() {
 //   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="admin-dashboard">
-        <div>
-        {/* Sidebar component for admin navigation */}
-        {/* <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} /> */}
-        </div>
+        {/* <h1>ADMIN LAYOUT IS WORKING</h1> */}
+        <Outlet />
     </div>
 
   );
