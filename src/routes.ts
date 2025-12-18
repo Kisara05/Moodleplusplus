@@ -30,4 +30,9 @@ export default [
     file: "src/routes/_public.admin.tsx",
     options: { index: true },
   },
+
+  // route("login", "routes/_public/login/login.tsx"),
+  // route("forgot-password", "routes/_public/login/forgot-password.tsx"),
+  // route("forgot-password/sent", "routes/_public/login/email-sent.tsx"),
+  // route("reset-password", "routes/_public/login/reset-password.tsx"),
 ] satisfies RouteConfig[];
