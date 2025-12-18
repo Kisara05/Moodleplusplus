@@ -23,10 +23,14 @@ export default [
         path: "courses/:courseID", 
         file: "src/routes/_public.course/$courseID.tsx" 
       },
+      { 
+        path: "courses/:courseID/create_post", 
+        file: "src/routes/_public.course/create_post.tsx" 
+      },
       { path: "post", file: "src/routes/_public.post.tsx" },
       { 
         path: "post/:postID", 
-        file: "src/routes/_public.post/$postID.tsx" 
+        file: "src/routes/_public.post/$postID.tsx"
       },
       {
         path: "admin",

@@ -21,7 +21,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
   const content = await getPost(post.section_id, post.post_id);
 
   if (!content) {
-    throw new Response("Post content is missing", { status: 400 });
   }
 
   return { post, content: content.htmlContent };
