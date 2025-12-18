@@ -32,6 +32,10 @@ export default [
         path: "post/:postID", 
         file: "src/routes/_public.post/$postID.tsx"
       },
+      { 
+        path: "post/:postID/edit", 
+        file: "src/routes/_public.post/edit.tsx"
+      },
       {
         path: "admin",
         file: "src/routes/_public.admin.tsx",

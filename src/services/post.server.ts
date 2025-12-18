@@ -124,3 +124,111 @@ export async function createPostWithContent({ title, content, sectionId }: Creat
 
   return redirect(`/courses/${sectionId}`);
 }
+
+// --- FIND POST ---
+export async function getPostForEdit(postId: string) {
+  // A. Fetch Metadata
+  const { data: post, error } = await supabase
+    .from("posts")
+    .select("*")
+    .eq("post_id", postId)
+    .single();
+
+  if (error || !post) return null;
+
+  // B. Download HTML
+  // We try the stored URL first, fallback to the standard path
+  const filePath = post.content_url || `${post.section_id}/${post.post_id}.html`;
+  
+  const { data: fileBlob } = await supabase.storage
+    .from("posts")
+    .download(filePath);
+
+  if (!fileBlob) return { post, content: "" };
+
+  let rawHtml = await fileBlob.text();
+
+  console.log(rawHtml);
+
+  // C. CLEANUP (Updated)
+  // 1. Extract content from the wrapper
+  // 1. Extract content
+  const contentMatch = rawHtml.match(/<\/style>\s*([\s\S]*?)\s*<\/div>/i);
+  let cleanContent = contentMatch ? contentMatch[1] : rawHtml;
+
+  // 2. TRIM WHITESPACE
+  cleanContent = cleanContent.trim();
+
+  // 3. REMOVE "Ghost" Newlines (The fix from before)
+  cleanContent = cleanContent.replace(/>\s*[\r\n]+\s*</g, '><');
+
+  // 4. NEW: Remove explicit empty paragraphs (<p><br></p>)
+  // This turns <p>Text</p><p><br></p><ul> into <p>Text</p><ul>
+  cleanContent = cleanContent.replace(/<p><br><\/p>/g, '');
+
+  return { post, content: cleanContent };
+}
+
+// --- UPDATE POST ---
+export async function updatePost({ postId, sectionId, title, content }: { postId: string, sectionId: string, title: string, content: string }) {
+  // A. Update Title in DB
+  console.log(title);
+  const { error: dbError } = await supabase
+    .from("posts")
+    .update({ title: title })
+    .eq("post_id", postId);
+
+  if (dbError) return { error: dbError.message };
+  else {
+    const { data, error: dbsError } = await supabase
+      .from("posts")
+      .select()
+      .eq("post_id", postId);
+    
+      if (!dbsError) console.log(data);
+  }
+
+  // B. Re-Wrap Content (Same logic as Create)
+  const fullHtml = `
+    <div class="post-content-wrapper">
+      <style>
+        .post-content-wrapper { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #374151; }
+        .post-content-wrapper h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; margin-top: 1em; }
+        .post-content-wrapper h2 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; margin-top: 1em; }
+        .post-content-wrapper p { margin-bottom: 1em; }
+        .post-content-wrapper ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .post-content-wrapper ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+        .post-content-wrapper img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 1rem 0; }
+        .post-content-wrapper pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-family: monospace; }
+        .post-content-wrapper a { color: #2563eb; text-decoration: underline; }
+      </style>
+      ${content} 
+    </div>
+  `;
+
+  // C. Overwrite File (upsert: true)
+  const filePath = `${sectionId}/${postId}.html`;
+  const { error: storageError } = await supabase.storage
+    .from("posts")
+    .upload(filePath, fullHtml, { contentType: "text/html", upsert: true });
+
+  if (storageError) return { error: storageError.message };
+
+  return { success: true };
+}
+
+// --- DELETE POST ---
+export async function deletePost(postId: string, sectionId: string) {
+  // A. Delete File
+  const filePath = `${sectionId}/${postId}.html`;
+  await supabase.storage.from("posts").remove([filePath]);
+
+  // B. Delete DB Row
+  const { error } = await supabase
+    .from("posts")
+    .delete()
+    .eq("post_id", postId);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
