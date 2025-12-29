@@ -53,6 +53,14 @@ export default function PostViewer() {
         className="prose prose-blue max-w-none text-gray-800 leading-relaxed"
         dangerouslySetInnerHTML={{ __html: content }} 
       />
+      <div className="mb-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+        <Link 
+          to={`/post/${post.post_id}/edit`}
+          className="text-sm font-medium text-gray-500 hover:text-blue-600 transition flex items-center gap-1"
+        >
+          Edit Post ✏️
+        </Link>
+      </div>
     </div>
   );
 }
