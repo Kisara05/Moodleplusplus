@@ -150,23 +150,24 @@ export async function getPostForEdit(postId: string) {
 
   console.log(rawHtml);
 
-  // C. CLEANUP (Updated)
+// --- CLEANUP LOGIC ---
+
   // 1. Extract content from the wrapper
-  // 1. Extract content
   const contentMatch = rawHtml.match(/<\/style>\s*([\s\S]*?)\s*<\/div>/i);
   let cleanContent = contentMatch ? contentMatch[1] : rawHtml;
 
-  // 2. TRIM WHITESPACE
-  cleanContent = cleanContent.trim();
-
-  // 3. REMOVE "Ghost" Newlines (The fix from before)
+  // 2. NUKE NEWLINES: Remove any newlines/spaces strictly between tags
+  // This turns: </p> \n <p>  into: </p><p>
   cleanContent = cleanContent.replace(/>\s*[\r\n]+\s*</g, '><');
 
-  // 4. NEW: Remove explicit empty paragraphs (<p><br></p>)
-  // This turns <p>Text</p><p><br></p><ul> into <p>Text</p><ul>
-  cleanContent = cleanContent.replace(/<p><br><\/p>/g, '');
+  // 3. NUKE EMPTY PARAGRAPHS: Remove explicit <p><br></p> tags
+  // We use a regex that handles variations like <p><br/></p> or <p> <br> </p>
+  cleanContent = cleanContent.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
 
-  return { post, content: cleanContent };
+  // 4. Final Trim
+  cleanContent = cleanContent.trim();
+  console.log("Cleaned Content:", cleanContent);
+  return { post, content: rawHtml };
 }
 
 // --- UPDATE POST ---

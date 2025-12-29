@@ -14,6 +14,9 @@ export default function Editor({ value, onChange }: EditorProps) {
       [{ list: "ordered" }, { list: "bullet" }],
       ["link", "clean"],
     ],
+    clipboard: {
+      matchVisual: false,
+    },
   };
 
   return (
