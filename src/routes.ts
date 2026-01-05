@@ -19,8 +19,6 @@ export default [
       },
       { path: "login", file: "src/routes/_public.login.tsx" },
       { path: "forget-password", file: "src/routes/_public.forget-password.tsx" },
-      { path: "email_sent", file: "src/routes/_public.email_sent.tsx" },
-      { path: "course_view", file: "src/routes/_public.course_view.tsx" },
       { path: "register", file: "src/routes/_public.register.tsx" },
       { path: "courses", file: "src/routes/_public.courses.tsx" },
       { 
