@@ -1,15 +1,24 @@
 import * as React from "react";
 
-export function Footer() {
-  const tealColor = "#2c7a7b";
+type FooterProps = {
+  language?: "en" | "vi";
+};
 
-  const footerStyle: React.CSSProperties = {
-    padding: "2rem",
-    backgroundColor: tealColor,
-    color: "white",
+export function Footer({ language = "en" }: FooterProps) {
+  const footerMainStyle: React.CSSProperties = {
+    backgroundColor: "#2C8B85",
+    padding: "3rem 2rem",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    color: "#FFFFFF",
+  };
+
+  const footerBottomStyle: React.CSSProperties = {
+    backgroundColor: "#000000",
+    padding: "1rem",
+    textAlign: "center",
+    color: "#FFFFFF",
   };
 
   const leftSectionStyle: React.CSSProperties = {
@@ -18,53 +27,50 @@ export function Footer() {
     gap: "0.5rem",
   };
 
-  const logoStyle: React.CSSProperties = {
-    fontSize: "1.25rem",
-    fontWeight: "bold",
-    color: "white",
-  };
-
   const rightSectionStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
     gap: "0.5rem",
   };
 
-  const contactTitleStyle: React.CSSProperties = {
+  const titleStyle: React.CSSProperties = {
+    fontSize: "1.5rem",
     fontWeight: "bold",
     marginBottom: "0.5rem",
   };
 
+  const textStyle: React.CSSProperties = {
+    fontSize: "1rem",
+    margin: "0.25rem 0",
+  };
+
   const emailStyle: React.CSSProperties = {
-    color: "white",
+    color: "#FFFFFF",
     textDecoration: "underline",
-    marginBottom: "0.25rem",
+    fontSize: "0.9rem",
+    margin: "0.25rem 0",
+    cursor: "pointer",
   };
 
   const poweredByStyle: React.CSSProperties = {
-    backgroundColor: "#000",
-    color: "white",
-    textAlign: "center",
-    padding: "0.5rem",
-    fontSize: "0.875rem",
+    fontSize: "0.9rem",
   };
 
-  const linkStyle: React.CSSProperties = {
-    color: "white",
+  const moodleLinkStyle: React.CSSProperties = {
+    color: "#FFFFFF",
     textDecoration: "underline",
+    cursor: "pointer",
   };
 
   return (
     <>
-      <footer style={footerStyle}>
+      <footer style={footerMainStyle}>
         <div style={leftSectionStyle}>
-          <div style={logoStyle}>Moodle++</div>
-          <div style={{ fontSize: "0.875rem" }}>
-            CS300 Project, HCMUS-YourName
-          </div>
+          <div style={titleStyle}>Moodle++</div>
+          <div style={textStyle}>CS300 Project, HCMUS-YourName</div>
         </div>
         <div style={rightSectionStyle}>
-          <div style={contactTitleStyle}>Contact Us</div>
+          <div style={titleStyle}>Contact Us</div>
           <a href="mailto:tvutrabaja@gmail.com" style={emailStyle}>
             tvutrabaja@gmail.com
           </a>
@@ -79,9 +85,18 @@ export function Footer() {
           </a>
         </div>
       </footer>
-      <div style={poweredByStyle}>
-        Powered by{" "}
-        <span style={linkStyle}>Moodle</span>
+      <div style={footerBottomStyle}>
+        <span style={poweredByStyle}>
+          Powered by{" "}
+          <a
+            href="https://moodle.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={moodleLinkStyle}
+          >
+            Moodle
+          </a>
+        </span>
       </div>
     </>
   );

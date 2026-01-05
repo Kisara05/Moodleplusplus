@@ -1,110 +1,221 @@
-import { Footer } from "~/components/layout/footer";
+import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Header } from "~/components/layout/header";
-// import { NewsSection } from "~/components/NewsSection";
-// import { Sidebar } from "~/components/Sidebar";
-import type { Route } from "~/types/index";
+import { Footer } from "~/components/layout/footer";
+import { useState } from "react";
 
-export function meta(_: Route.MetaArgs) {
-  return [
-    { title: "Moodle++" },
-    { name: "description", content: "Main page of Moodle++" },
+export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const signed_in = url.searchParams.get("signed_in") === "1";
+  const user_flag = parseInt(url.searchParams.get("user_flag") || "1");
+  const language = (url.searchParams.get("lang") as "en" | "vi") || "en";
+
+  // If not signed in, redirect to login
+  // Note: In production, check session/cookie instead of URL params
+  if (!signed_in) {
+    throw new Response(null, {
+      status: 302,
+      headers: { Location: "/login" },
+    });
+  }
+
+  // Sample courses data - replace with actual data from database
+  const courses = [
+    {
+      id: "1",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "2",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "3",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "4",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "5",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "6",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "7",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "8",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "9",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
+    {
+      id: "10",
+      name: "Artificial Intelligence - 23TT1",
+      teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
+    },
   ];
+
+  return json({
+    signed_in,
+    user_flag,
+    language,
+    courses,
+  });
 }
 
 export default function Home() {
+  const { signed_in, user_flag, language, courses } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const toggleLanguage = () => {
+    const newLang = currentLanguage === "en" ? "vi" : "en";
+    setCurrentLanguage(newLang);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("lang", newLang);
+    setSearchParams(newParams);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement search functionality
+    console.log("Searching for:", searchQuery);
+    // Navigate to search results or filter courses
+  };
+
+  const handleCourseClick = (courseId: string) => {
+    // Navigate to course page with user_flag
+    navigate(`/courses/${courseId}?user_flag=${user_flag}`);
+  };
+
+  const handleDashboardClick = () => {
+    // TODO: Navigate to dashboard (implement later)
+    console.log("Navigate to dashboard");
+  };
+
+  const handleMyCoursesClick = () => {
+    // TODO: Navigate to My courses page (implement later)
+    navigate("/courses");
+  };
+
+  const handleCourseRegistrationClick = () => {
+    // TODO: Navigate to Course registration page (implement later)
+    console.log("Navigate to course registration");
+  };
+
+  const handleCategoryClick = (category: string) => {
+    // Navigate to courses filtered by category
+    handleMyCoursesClick();
+  };
+
+  // Redirect is handled in loader, but keep this as fallback
+  if (!signed_in) {
+    return null;
+  }
+
   const containerStyle: React.CSSProperties = {
     minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#FFFFFF",
   };
 
   const mainStyle: React.CSSProperties = {
     flex: 1,
     padding: "2rem",
-    maxWidth: "1200px",
-    width: "100%",
-    margin: "0 auto",
   };
 
   const searchBarStyle: React.CSSProperties = {
-    backgroundColor: "white",
+    width: "100%",
     padding: "1rem",
+    fontSize: "1rem",
+    border: "2px solid #D9D9D9",
+    borderRadius: "25px",
     marginBottom: "2rem",
     display: "flex",
-    gap: "1rem",
     alignItems: "center",
+    gap: "1rem",
   };
 
   const searchInputStyle: React.CSSProperties = {
     flex: 1,
-    padding: "0.75rem",
+    border: "none",
+    outline: "none",
     fontSize: "1rem",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
   };
 
-  const searchButtonStyle: React.CSSProperties = {
-    padding: "0.75rem 1rem",
-    backgroundColor: "#2c7a7b",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
+  const searchIconStyle: React.CSSProperties = {
     cursor: "pointer",
-    fontSize: "1rem",
+    width: "24px",
+    height: "24px",
+    objectFit: "contain",
   };
 
   const sectionStyle: React.CSSProperties = {
-    backgroundColor: "white",
-    padding: "2rem",
-    marginBottom: "2rem",
-    borderRadius: "4px",
+    marginBottom: "3rem",
   };
 
   const sectionTitleStyle: React.CSSProperties = {
-    fontSize: "1.75rem",
+    fontSize: "1.5rem",
     fontWeight: "bold",
-    color: "#2c7a7b",
+    color: "#000000",
     marginBottom: "1.5rem",
   };
 
-  const courseCardStyle: React.CSSProperties = {
-    padding: "1.5rem",
-    border: "1px solid #e0e0e0",
-    borderRadius: "4px",
-    marginBottom: "1rem",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+  const coursesListStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
   };
 
-  const courseTitleStyle: React.CSSProperties = {
-    fontSize: "1.25rem",
+  const courseCardStyle: React.CSSProperties = {
+    backgroundColor: "#D9D9D9",
+    borderRadius: "25px",
+    padding: "1.5rem",
+    cursor: "pointer",
+    transition: "transform 0.2s, box-shadow 0.2s",
+    width: "100%",
+  };
+
+  const courseNameStyle: React.CSSProperties = {
+    fontSize: "1.1rem",
     fontWeight: "bold",
-    color: "#333",
-    marginBottom: "0.5rem",
+    color: "#000000",
+    marginBottom: "1rem",
   };
 
   const teacherStyle: React.CSSProperties = {
-    fontSize: "1rem",
-    color: "#666",
-    marginBottom: "0.25rem",
+    fontSize: "0.9rem",
+    color: "#565656",
+    marginBottom: "0.5rem",
   };
 
-  const categoriesHeaderStyle: React.CSSProperties = {
+  const categoriesSectionStyle: React.CSSProperties = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "1.5rem",
-  };
-
-  const allCoursesButtonStyle: React.CSSProperties = {
-    padding: "0.5rem 1rem",
-    backgroundColor: "#2c7a7b",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "0.9rem",
-    fontWeight: "600",
   };
 
   const categoriesGridStyle: React.CSSProperties = {
@@ -114,70 +225,136 @@ export default function Home() {
   };
 
   const categoryButtonStyle: React.CSSProperties = {
-    padding: "1rem",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    backgroundColor: "white",
+    backgroundColor: "#D9D9D9",
+    borderRadius: "25px",
+    padding: "1.5rem",
+    border: "none",
     cursor: "pointer",
     fontSize: "1rem",
+    fontWeight: "bold",
+    color: "#000000",
     textAlign: "left",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
   };
 
-  // Sample courses data
-  const courses = Array(10).fill(null).map((_, i) => ({
-    title: "Artificial Intelligence - 23TT1",
-    teachers: [
-      "Nguyễn Hải Đăng",
-      "Nguyễn Ngọc Thảo",
-      "Nguyễn Thanh Tình",
-    ],
-  }));
+  const allCoursesButtonStyle: React.CSSProperties = {
+    backgroundColor: "#0A853F",
+    color: "#FFFFFF",
+    borderRadius: "25px",
+    padding: "0.75rem 1.5rem",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "1rem",
+    fontWeight: "bold",
+  };
 
   return (
     <div style={containerStyle}>
-      <Header isLoggedIn={true} />
+      <Header
+        signed_in={signed_in}
+        user_flag={user_flag}
+        language={currentLanguage}
+        onLanguageChange={toggleLanguage}
+      />
       <main style={mainStyle}>
-        {/* Search Bar */}
-        <div style={searchBarStyle}>
+        <form onSubmit={handleSearch} style={searchBarStyle}>
           <input
             type="text"
-            placeholder="Search course"
+            placeholder={currentLanguage === "en" ? "Search course" : "Tìm kiếm khóa học"}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             style={searchInputStyle}
           />
-          <button style={searchButtonStyle}>🔍</button>
+          <img 
+            src="/icons/search.png" 
+            alt="Search" 
+            style={searchIconStyle}
+            onClick={handleSearch}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                const span = document.createElement("span");
+                span.textContent = "🔍";
+                span.style.cursor = "pointer";
+                span.style.fontSize = "1.2rem";
+                span.style.color = "#565656";
+                parent.appendChild(span);
+              }
+            }}
+          />
+        </form>
+
+        <div style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>
+            {currentLanguage === "en" ? "My courses" : "Khóa học của tôi"}
+          </h2>
+          <div style={coursesListStyle}>
+            {courses.map((course) => (
+              <div
+                key={course.id}
+                style={courseCardStyle}
+                onClick={() => handleCourseClick(course.id)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <div style={courseNameStyle}>{course.name}</div>
+                {course.teachers.map((teacher, index) => (
+                  <div key={index} style={teacherStyle}>
+                    Teacher: {teacher}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* My courses Section */}
         <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>My courses</h2>
-          {courses.map((course, index) => (
-            <div key={index} style={courseCardStyle}>
-              <div style={courseTitleStyle}>{course.title}</div>
-              {course.teachers.map((teacher, tIndex) => (
-                <div key={tIndex} style={teacherStyle}>
-                  Teacher: {teacher}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {/* Course categories Section */}
-        <div style={sectionStyle}>
-          <div style={categoriesHeaderStyle}>
-            <h2 style={sectionTitleStyle}>Course categories</h2>
-            <button style={allCoursesButtonStyle}>All courses &gt;&gt;</button>
+          <div style={categoriesSectionStyle}>
+            <h2 style={sectionTitleStyle}>
+              {currentLanguage === "en" ? "Course categories" : "Danh mục khóa học"}
+            </h2>
+            <button
+              style={allCoursesButtonStyle}
+              onClick={handleMyCoursesClick}
+            >
+              {currentLanguage === "en" ? "All courses >>" : "Tất cả khóa học >>"}
+            </button>
           </div>
           <div style={categoriesGridStyle}>
-            <button style={categoryButtonStyle}>&gt; 2023 - 2024</button>
-            <button style={categoryButtonStyle}>&gt; 2024 - 2025</button>
-            <button style={categoryButtonStyle}>&gt; 2023 - 2024</button>
-            <button style={categoryButtonStyle}>&gt; 2024 - 2025</button>
+            <button
+              style={categoryButtonStyle}
+              onClick={() => handleCategoryClick("2023-2024")}
+            >
+              &gt; 2023 - 2024
+            </button>
+            <button
+              style={categoryButtonStyle}
+              onClick={() => handleCategoryClick("2024-2025")}
+            >
+              &gt; 2024 - 2025
+            </button>
+            <button
+              style={categoryButtonStyle}
+              onClick={() => handleCategoryClick("2023-2024")}
+            >
+              &gt; 2023 - 2024
+            </button>
+            <button
+              style={categoryButtonStyle}
+              onClick={() => handleCategoryClick("2024-2025")}
+            >
+              &gt; 2024 - 2025
+            </button>
           </div>
         </div>
       </main>
-      <Footer />
+      <Footer language={currentLanguage} />
     </div>
   );
 }

@@ -1,36 +1,71 @@
-const r = (file: string) => () => import(file);
-
 type RouteConfig = {
   path: string;
   file: string;
+  children?: RouteConfig[]; // Add support for children
   options?: {
     index?: boolean;
   };
 };
 
 export default [
-  // Layout cha _public sẽ bọc tất cả các route con
-  { path: "/", file: "src/routes/_public.tsx" },
-  // Các route con, sẽ render vào <Outlet> của _public.tsx
-  {
-    path: "/",
-    file: "src/routes/_public._index.tsx",
-    options: { index: true },
-  },
-  { path: "/login", file: "src/routes/_public.login.tsx" },
-  { path: "/forgot_password", file: "src/routes/_public.forgot_password.tsx" },
-  { path: "/email_sent", file: "src/routes/_public.email_sent.tsx" },
-  { path: "/course_view", file: "src/routes/_public.course_view.tsx" },
-  { path: "/courses", file: "src/routes/_public.courses.tsx" },
-  {
-    path: "/courses/:courseID",
-    file: "src/routes/_public.courses.$courseID.tsx",
-  },
-  // Nhóm Admin (lồng 2 lớp)
-  { path: "/admin", file: "src/routes/_public.admin/layout.tsx" },
-  {
-    path: "/admin",
-    file: "src/routes/_public.admin.tsx",
-    options: { index: true },
+  { 
+    path: "/", 
+    file: "src/routes/_public.tsx",
+    children: [
+      {
+        path: "",
+        file: "src/routes/_public._index.tsx",
+        options: { index: true },
+      },
+      { path: "login", file: "src/routes/_public.login.tsx" },
+      { path: "forget-password", file: "src/routes/_public.forget-password.tsx" },
+      { path: "email_sent", file: "src/routes/_public.email_sent.tsx" },
+      { path: "course_view", file: "src/routes/_public.course_view.tsx" },
+      { path: "register", file: "src/routes/_public.register.tsx" },
+      { path: "courses", file: "src/routes/_public.courses.tsx" },
+      { 
+        path: "courses/:courseID", 
+        file: "src/routes/_public.course/$courseID.tsx" 
+      },
+      { 
+        path: "courses/:courseID/create_post", 
+        file: "src/routes/_public.course/create_post.tsx" 
+      },
+      { path: "post", file: "src/routes/_public.post.tsx" },
+      { 
+        path: "post/:postID", 
+        file: "src/routes/_public.post/$postID.tsx"
+      },
+      { 
+        path: "post/:postID/edit", 
+        file: "src/routes/_public.post/edit.tsx"
+      },
+      {
+        path: "admin",
+        file: "src/routes/_public.admin.tsx",
+        children: [
+          {
+            path: "",
+            file: "src/routes/_public.admin/_index.tsx",
+            options: { index: true }
+          },
+          { path: "courses", file: "src/routes/_public.admin/courses.tsx" },
+          { path: "users", file: "src/routes/_public.admin/users.tsx" },
+        ]
+      },
+      { path: "admin/sync_folders", file: "src/routes/_public.admin.sync_folders.tsx" },
+      {
+        path: "user",
+        file: "src/routes/_public.user.tsx",
+        children: [
+          {
+            path: "",
+            file: "src/routes/_public.user/_index.tsx",
+            options: { index: true }
+          }
+        ]
+      },
+      { path: "discussion", file: "src/routes/_public.discussion.tsx" },
+    ]
   },
 ] satisfies RouteConfig[];
