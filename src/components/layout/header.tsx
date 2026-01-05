@@ -6,6 +6,7 @@ type HeaderProps = {
   user_flag?: number; // 1 = student, 0 = teacher/admin
   language?: "en" | "vi";
   onLanguageChange?: () => void;
+  userId?: string; // User ID for navigation
 };
 
 export function Header({
@@ -13,6 +14,7 @@ export function Header({
   user_flag = 1,
   language = "en",
   onLanguageChange,
+  userId = "123"
 }: HeaderProps) {
   const navigate = useNavigate();
 
@@ -189,9 +191,11 @@ export function Header({
 
   return (
     <header style={headerStyle}>
-      <Link to="/" style={logoStyle}>
-        Moodle++
-      </Link>
+      <div style={logoStyle}>
+        <Link to={`/?signed_in=1&user_flag=${user_flag}`} style={logoStyle}>
+          Moodle++
+        </Link>
+      </div>
 
       <nav style={navStyle}>
         <Link to="/" style={navLinkStyle}>
@@ -200,14 +204,11 @@ export function Header({
         <Link to="/courses" style={activeNavLinkStyle}>
           {language === "en" ? "My courses" : "Khóa học của tôi"}
         </Link>
-        {user_flag === 1 ? (
-          <Link to="/course-registration" style={navLinkStyle}>
+        {user_flag === 1 && (
+          <Link 
+            to={`/course-registration?signed_in=1&user_flag=${user_flag}&userId=${userId}`}  style={navLinkStyle}>
             {language === "en" ? "Course registration" : "Đăng kí học phần"}
           </Link>
-        ) : (
-          <span style={{ ...navLinkStyle, opacity: 0.5 }}>
-            Course registration
-          </span>
         )}
       </nav>
 
