@@ -50,5 +50,18 @@ export default [
       // ... login, register
     ]
   },
-  // Admin route...
+  { path: "/login", file: "src/routes/_public.login.tsx" },
+  { path: "/forgot_password", file: "src/routes/_public.forgot_password.tsx" },
+  { path: "/courses", file: "src/routes/_public.courses.tsx" },
+  {
+    path: "/courses/:courseID",
+    file: "src/routes/_public.courses.$courseID.tsx",
+  },
+  // Nhóm Admin (lồng 2 lớp)
+  { path: "/admin", file: "src/routes/_public.admin/layout.tsx" },
+  {
+    path: "/admin",
+    file: "src/routes/_public.admin.tsx",
+    options: { index: true },
+  },
 ] satisfies RouteConfig[];
