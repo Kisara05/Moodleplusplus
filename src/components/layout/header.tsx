@@ -6,13 +6,15 @@ type HeaderProps = {
   user_flag?: number; // 1 = student, 0 = teacher/admin
   language?: "en" | "vi";
   onLanguageChange?: () => void;
+  userId?: string; // User ID for navigation
 };
 
 export function Header({ 
   signed_in = false, 
   user_flag = 1,
   language = "en",
-  onLanguageChange
+  onLanguageChange,
+  userId = "123"
 }: HeaderProps) {
   const navigate = useNavigate();
   const [showHelp, setShowHelp] = React.useState(false);
@@ -193,7 +195,9 @@ export function Header({
   return (
     <header style={headerStyle}>
       <div style={logoSectionStyle}>
-        <div style={logoStyle}>Moodle++</div>
+        <Link to={`/?signed_in=1&user_flag=${user_flag}`} style={logoStyle}>
+          Moodle++
+        </Link>
       </div>
       <div style={navStyle}>
         <Link to="/" style={navLinkStyle}>
@@ -203,7 +207,10 @@ export function Header({
           My courses
         </Link>
         {user_flag === 1 && (
-          <Link to="/course-registration" style={navLinkStyle}>
+          <Link 
+            to={`/course-registration?signed_in=1&user_flag=${user_flag}&userId=${userId}`} 
+            style={navLinkStyle}
+          >
             Course registration
           </Link>
         )}

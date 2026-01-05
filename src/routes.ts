@@ -64,6 +64,7 @@ export default [
         ]
       },
       { path: "discussion", file: "src/routes/_public.discussion.tsx" },
+      { path: "course-registration", file: "src/routes/_public.course-registration.tsx" },
     ]
   },
 ] satisfies RouteConfig[];

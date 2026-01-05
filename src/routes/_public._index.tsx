@@ -74,16 +74,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
   ];
 
+  // Get userId from session or URL (TODO: Get from actual session)
+  const userId = url.searchParams.get("userId") || "123";
+
   return json({
     signed_in,
     user_flag,
     language,
     courses,
+    userId,
   });
 }
 
 export default function Home() {
-  const { signed_in, user_flag, language, courses } = useLoaderData<typeof loader>();
+  const { signed_in, user_flag, language, courses, userId } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
@@ -120,8 +124,7 @@ export default function Home() {
   };
 
   const handleCourseRegistrationClick = () => {
-    // TODO: Navigate to Course registration page (implement later)
-    console.log("Navigate to course registration");
+    navigate(`/course-registration?signed_in=1&user_flag=${user_flag}&userId=${userId || "123"}`);
   };
 
   const handleCategoryClick = (category: string) => {
@@ -254,6 +257,7 @@ export default function Home() {
         user_flag={user_flag}
         language={currentLanguage}
         onLanguageChange={toggleLanguage}
+        userId={userId}
       />
       <main style={mainStyle}>
         <form onSubmit={handleSearch} style={searchBarStyle}>
