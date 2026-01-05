@@ -1,3 +1,4 @@
+import { Link } from "@remix-run/react";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
 import type { Route } from "~/types/index";
@@ -101,9 +102,9 @@ export default function Login() {
               <button type="submit" style={buttonStyle}>
                 Log in
               </button>
-              <a href="#" style={forgotPasswordStyle}>
+              <Link to="/forgot_password" style={forgotPasswordStyle}>
                 Forget password?
-              </a>
+              </Link>
             </div>
           </form>
         </div>
