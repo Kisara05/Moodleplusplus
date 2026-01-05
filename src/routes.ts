@@ -11,13 +11,15 @@ export default [
   { 
     path: "/", 
     file: "src/routes/_public.tsx",
-    // Move children INSIDE this object
     children: [
       {
-        path: "", // or use options: { index: true } depending on your parser
+        path: "",
         file: "src/routes/_public._index.tsx",
         options: { index: true },
       },
+      { path: "login", file: "src/routes/_public.login.tsx" },
+      { path: "forget-password", file: "src/routes/_public.forget-password.tsx" },
+      { path: "register", file: "src/routes/_public.register.tsx" },
       { path: "courses", file: "src/routes/_public.courses.tsx" },
       { 
         path: "courses/:courseID", 
@@ -44,24 +46,24 @@ export default [
             path: "",
             file: "src/routes/_public.admin/_index.tsx",
             options: { index: true }
+          },
+          { path: "courses", file: "src/routes/_public.admin/courses.tsx" },
+          { path: "users", file: "src/routes/_public.admin/users.tsx" },
+        ]
+      },
+      { path: "admin/sync_folders", file: "src/routes/_public.admin.sync_folders.tsx" },
+      {
+        path: "user",
+        file: "src/routes/_public.user.tsx",
+        children: [
+          {
+            path: "",
+            file: "src/routes/_public.user/_index.tsx",
+            options: { index: true }
           }
         ]
-      }
-      // ... login, register
+      },
+      { path: "discussion", file: "src/routes/_public.discussion.tsx" },
     ]
-  },
-  { path: "/login", file: "src/routes/_public.login.tsx" },
-  { path: "/forgot_password", file: "src/routes/_public.forgot_password.tsx" },
-  { path: "/courses", file: "src/routes/_public.courses.tsx" },
-  {
-    path: "/courses/:courseID",
-    file: "src/routes/_public.courses.$courseID.tsx",
-  },
-  // Nhóm Admin (lồng 2 lớp)
-  { path: "/admin", file: "src/routes/_public.admin/layout.tsx" },
-  {
-    path: "/admin",
-    file: "src/routes/_public.admin.tsx",
-    options: { index: true },
   },
 ] satisfies RouteConfig[];
