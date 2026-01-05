@@ -78,7 +78,8 @@ export default function ForgotPassword() {
     fontSize: "1rem",
     fontWeight: "600",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    textDecoration: "none",
+    display: "inline-block",
   };
 
   const buttonContainerStyle: React.CSSProperties = {
@@ -88,6 +89,9 @@ export default function ForgotPassword() {
   };
 
   const continueButtonStyle: React.CSSProperties = {
+    display: 'flex',         // Enables flex container
+    justifyContent: 'center', // Centers children horizontally
+    alignItems: 'center',     // Centers children vertically
     padding: "0.75rem 1.5rem",
     backgroundColor: "#2c7a7b",
     color: "white",
@@ -96,8 +100,7 @@ export default function ForgotPassword() {
     fontSize: "1rem",
     fontWeight: "600",
     cursor: "pointer",
-    textDecoration: "none",
-    display: "inline-block",
+    whiteSpace: "nowrap",
   };
 
   const errorStyle: React.CSSProperties = {
@@ -109,7 +112,7 @@ export default function ForgotPassword() {
 
   return (
     <div style={containerStyle}>
-      <Header isLoggedIn={false} />
+      <Header signed_in={false} />
       <main style={mainStyle}>
         <div style={cardStyle}>
           <h1 style={titleStyle}>Moodle++</h1>

@@ -163,7 +163,7 @@ export default function Login() {
                 {currentLanguage === "en" ? "Log in" : "Đăng nhập"}
               </button>
               <a
-                href="/forget-password"
+                href="/forgot_password"
                 style={linkStyle}
               >
                 {currentLanguage === "en" ? "Forget password?" : "Quên mật khẩu?"}

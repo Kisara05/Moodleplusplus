@@ -8,61 +8,64 @@ type HeaderProps = {
   onLanguageChange?: () => void;
 };
 
-export function Header({ 
-  signed_in = false, 
+export function Header({
+  signed_in = false,
   user_flag = 1,
   language = "en",
-  onLanguageChange
+  onLanguageChange,
 }: HeaderProps) {
   const navigate = useNavigate();
+
   const [showHelp, setShowHelp] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [showMessages, setShowMessages] = React.useState(false);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
 
+  /* =========================
+     SHARED STYLES (RECTANGULAR)
+     ========================= */
+
   const headerStyle: React.CSSProperties = {
-    backgroundColor: signed_in ? "#2C8B85" : "#2C8B85",
+    backgroundColor: "#2c7a7b",
     padding: "1rem 2rem",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    borderRadius: signed_in ? "0 0 25px 25px" : "0",
-    color: "#FFFFFF",
-  };
-
-  const logoSectionStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: "1rem",
+    color: "white",
   };
 
   const logoStyle: React.CSSProperties = {
     fontSize: "1.5rem",
     fontWeight: "bold",
-    color: "#FFFFFF",
     textDecoration: "none",
-    backgroundColor: signed_in ? "#0A853F" : "transparent",
-    padding: signed_in ? "0.5rem 1rem" : "0",
-    borderRadius: signed_in ? "25px" : "0",
+    color: "white",
   };
 
   const navStyle: React.CSSProperties = {
     display: "flex",
-    gap: "1.5rem",
+    gap: "2rem",
     alignItems: "center",
   };
 
   const navLinkStyle: React.CSSProperties = {
-    color: "#FFFFFF",
+    color: "white",
     textDecoration: "none",
     fontSize: "1rem",
-    cursor: "pointer",
-    padding: "0.5rem 1rem",
-    borderRadius: "25px",
-    transition: "background-color 0.2s",
+    padding: "0.25rem 0",
   };
 
-  const iconStyle: React.CSSProperties = {
+  const activeNavLinkStyle: React.CSSProperties = {
+    ...navLinkStyle,
+    borderBottom: "2px solid white",
+  };
+
+  const rightSectionStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "1.25rem",
+  };
+
+    const iconStyle: React.CSSProperties = {
     width: "32px",
     height: "32px",
     borderRadius: "25px",
@@ -77,20 +80,19 @@ export function Header({
     overflow: "hidden",
   };
 
-  const iconImageStyle: React.CSSProperties = {
+    const iconImageStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
     objectFit: "contain",
     padding: "6px",
   };
 
-  const userAvatarStyle: React.CSSProperties = {
-    width: "48px",
-    height: "48px",
+  const avatarStyle: React.CSSProperties = {
+    width: "32px",
+    height: "32px",
     borderRadius: "50%",
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "white",
     cursor: "pointer",
-    border: "2px solid #FFFFFF",
   };
 
   const dropdownStyle: React.CSSProperties = {
@@ -102,6 +104,7 @@ export function Header({
     borderRadius: "25px",
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
     padding: "1rem",
+
     minWidth: "200px",
     zIndex: 1000,
   };
@@ -114,7 +117,7 @@ export function Header({
     color: "#000000",
   };
 
-  const notificationBoxStyle: React.CSSProperties = {
+    const notificationBoxStyle: React.CSSProperties = {
     position: "absolute",
     top: "100%",
     right: "0",
@@ -129,34 +132,25 @@ export function Header({
     zIndex: 1000,
   };
 
+  /* =========================
+     NOT SIGNED IN HEADER
+     ========================= */
+
   if (!signed_in) {
-    // Type 2: Not signed in (Login page header)
     return (
       <header style={headerStyle}>
-        <div style={logoSectionStyle}>
-          <Link to="/" style={logoStyle}>
-            Moodle++
-          </Link>
-        </div>
-        <div style={navStyle}>
+        <Link to="/" style={logoStyle}>
+          Moodle++
+        </Link>
+        <div style={rightSectionStyle}>
           <span style={{ cursor: "pointer" }} onClick={onLanguageChange}>
             {language === "en" ? "English" : "Tiếng Việt"}
           </span>
           <div
-            style={{ ...iconStyle, position: "relative" }}
+            style={{ position: "relative" }}
             onClick={() => setShowHelp(!showHelp)}
           >
-            <img 
-              src="/icons/help.png" 
-              alt="Help" 
-              style={iconImageStyle}
-              onError={(e) => {
-                // Fallback to text if image not found
-                e.currentTarget.style.display = "none";
-                const parent = e.currentTarget.parentElement;
-                if (parent) parent.textContent = "?";
-              }}
-            />
+            <div style={iconStyle}>?</div>
             {showHelp && (
               <div style={notificationBoxStyle}>
                 <h3 style={{ margin: "0 0 1rem 0", color: "#000000" }}>
@@ -167,7 +161,7 @@ export function Header({
                     ? "Welcome to Moodle++. Please enter your User ID and Password to login."
                     : "Chào mừng đến với Moodle++. Vui lòng nhập User ID và Mật khẩu để đăng nhập."}
                 </p>
-                <button
+                                <button
                   onClick={() => setShowHelp(false)}
                   style={{
                     marginTop: "1rem",
@@ -189,36 +183,36 @@ export function Header({
     );
   }
 
-  // Type 1: Signed in (Main screen header)
+  /* =========================
+     SIGNED IN HEADER
+     ========================= */
+
   return (
     <header style={headerStyle}>
-      <div style={logoSectionStyle}>
-        <div style={logoStyle}>Moodle++</div>
-      </div>
-      <div style={navStyle}>
+      <Link to="/" style={logoStyle}>
+        Moodle++
+      </Link>
+
+      <nav style={navStyle}>
         <Link to="/" style={navLinkStyle}>
-          Dashboard
+          {language === "en" ? "Dashboard" : "Trang tổng quan"}
         </Link>
-        <Link to="/courses" style={navLinkStyle}>
-          My courses
+        <Link to="/courses" style={activeNavLinkStyle}>
+          {language === "en" ? "My courses" : "Khóa học của tôi"}
         </Link>
-        {user_flag === 1 && (
+        {user_flag === 1 ? (
           <Link to="/course-registration" style={navLinkStyle}>
-            Course registration
+            {language === "en" ? "Course registration" : "Đăng kí học phần"}
           </Link>
-        )}
-        {user_flag !== 1 && (
-          <span
-            style={{
-              ...navLinkStyle,
-              opacity: 0.5,
-              cursor: "not-allowed",
-              pointerEvents: "none",
-            }}
-          >
+        ) : (
+          <span style={{ ...navLinkStyle, opacity: 0.5 }}>
             Course registration
           </span>
         )}
+      </nav>
+
+      <div style={rightSectionStyle}>
+        {/* Help */}
         <div style={{ position: "relative" }}>
           <div
             style={iconStyle}
@@ -228,7 +222,7 @@ export function Header({
               setShowMessages(false);
             }}
           >
-            <img 
+          <img 
               src="/icons/help.png" 
               alt="Help" 
               style={iconImageStyle}
@@ -266,6 +260,8 @@ export function Header({
             )}
           </div>
         </div>
+
+        {/* Notifications */}
         <div style={{ position: "relative" }}>
           <div
             style={iconStyle}
@@ -275,7 +271,7 @@ export function Header({
               setShowMessages(false);
             }}
           >
-            <img 
+                      <img 
               src="/icons/bell.png" 
               alt="Notifications" 
               style={iconImageStyle}
@@ -299,6 +295,8 @@ export function Header({
             )}
           </div>
         </div>
+
+        {/* Messages */}
         <div style={{ position: "relative" }}>
           <div
             style={iconStyle}
@@ -308,7 +306,7 @@ export function Header({
               setShowNotifications(false);
             }}
           >
-            <img 
+                      <img 
               src="/icons/message.png" 
               alt="Messages" 
               style={iconImageStyle}
@@ -332,22 +330,19 @@ export function Header({
             )}
           </div>
         </div>
+
+        {/* Avatar + Menu */}
         <div style={{ position: "relative" }}>
           <div
-            style={userAvatarStyle}
-            onClick={() => {
-              setShowUserMenu(!showUserMenu);
-              setShowHelp(false);
-              setShowNotifications(false);
-              setShowMessages(false);
-            }}
+            style={avatarStyle}
+            onClick={() => setShowUserMenu(!showUserMenu)}
           />
           {showUserMenu && (
             <div style={dropdownStyle}>
               <div
                 style={dropdownItemStyle}
                 onClick={() => {
-                  if (onLanguageChange) onLanguageChange();
+                  onLanguageChange?.();
                   setShowUserMenu(false);
                 }}
               >
@@ -356,7 +351,6 @@ export function Header({
               <div
                 style={dropdownItemStyle}
                 onClick={() => {
-                  // Handle logout
                   navigate("/login");
                   setShowUserMenu(false);
                 }}
@@ -366,6 +360,7 @@ export function Header({
             </div>
           )}
         </div>
+
         <div
           style={{ ...iconStyle }}
           onClick={() => {
