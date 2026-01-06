@@ -20,7 +20,7 @@ export async function getAllPosts(sectionId: string) {
 export async function getPostInfo(postId: string) {
     const { data, error } = await supabase
         .from('posts')            // Table: posts
-        .select('post_id, section_id, title') // Columns: post_id and title
+        .select('post_id, section_id, title, post_type') // Columns: post_id and title
         .eq('post_id', postId)     // Filter: WHERE section_id = 2
         .single();
     
@@ -44,6 +44,28 @@ export async function getPost(sectionId: string, postId: string) {
     const htmlContent = await fileBlob.text();
 
     return { htmlContent };
+}
+
+export async function getThreads(postId: string) {
+    const { data, error } = await supabase
+        .from('posts')
+        .select('post_type')
+        .eq('post_id', postId);
+    if (error) throw error;
+    if (data.length === 0) return [];
+
+    const postType = data[0].post_type;
+
+    if (postType !== 'discussion') {
+        return [];
+    }
+
+    const { data: discussions, error: discussionError } = await supabase
+        .from('threads')
+        .select('thread_id, title, created_at')
+        .eq('post_id', postId);
+    if (discussionError) throw discussionError;
+    return discussions;
 }
 
 export async function createPostWithContent({ title, content, sectionId }: CreatePostDTO) {
