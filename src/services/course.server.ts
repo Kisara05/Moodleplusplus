@@ -43,7 +43,12 @@ export async function getSectionById(sectionId: string) {
   console.log("Course Service: Getting section by ID", sectionId);
   const { data, error } = await supabase
     .from('section')      // The table name
-    .select('*')          // Select all columns
+    .select(`
+      *,
+      course (
+        course_name
+      )
+    `)          // Select all columns plus course name
     .eq('section_id', sectionId)  // Where section_id equals 1
     .single();            // Optional: Use this if you expect exactly one result (returns object instead of array)
   // console.log(data);
