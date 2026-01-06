@@ -3,30 +3,25 @@
     // Các tính năng JS
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "target": "ES2022",
-
     // Modules
     "module": "ES2022",
-    "moduleResolution": "Bundler", // Rất quan trọng cho Vite
+    "moduleResolution": "Bundler",
     "esModuleInterop": true,
-    "isolatedModules": true, // Bắt buộc cho Vite
-
+    "isolatedModules": true,
     // React
     "jsx": "react-jsx",
-
-    // Path Aliases (Quan trọng)
+    // Path Aliases
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
     },
-
-    // Chất lượng code
+    // Kiểm tra code
     "strict": true,
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-
     // Đầu ra
-    "noEmit": true // Vite/Remix sẽ build, không phải 'tsc'
+    "noEmit": true
   },
   "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

@@ -3,7 +3,7 @@ import { requireUserId } from "./auth.server";
 import { json } from "@remix-run/node";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 
-// // File này sẽ chứa logic backend (CRUD) cho Khóa học
+// File này sẽ chứa logic backend (CRUD) cho Khóa học
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     // Backend logic để load dữ liệu Course cho trang Course Detail
@@ -167,18 +167,38 @@ export async function getCourseList(userId: string) {
     return data ?? [];
 }
 
-// export async function getCourseById(courseId: string) {
-//   // const { data, error } = await supabase
-//   //   .from("courses")
-//   //   .select("*")
-//   //   .eq("id", courseId)
-//   //   .single();
-//   // if (error) throw error;
-//   // return data;
-//   console.log("Course Service: Getting course by ID", courseId);
-//   return {
-//     id: courseId,
-//     title: "Software Engineering",
-//     description: "Mô tả chi tiết...",
-//   };
-// }
+export async function getCourseById(courseId: string) {
+  console.log("Course Service: Getting course by ID", courseId);
+  const { data, error } = await supabase
+    .from("course")
+    .select("*")
+    .eq("course_id", courseId)
+    .single();
+  // console.log(data);
+  if (error) throw error;
+  return data;
+  
+  return {
+    id: courseId,
+    title: "Software Engineering",
+    description: "Mô tả chi tiết...",
+  };
+}
+
+export async function getSectionById(sectionId: string) {
+  console.log("Course Service: Getting section by ID", sectionId);
+  const { data, error } = await supabase
+    .from('section')      // The table name
+    .select('*')          // Select all columns
+    .eq('section_id', sectionId)  // Where section_id equals 1
+    .single();            // Optional: Use this if you expect exactly one result (returns object instead of array)
+  // console.log(data);
+  if (error) throw error;
+  return data;
+  
+  // return {
+  //   id: courseId,
+  //   title: "Software Engineering",
+  //   description: "Mô tả chi tiết...",
+  // };
+}
