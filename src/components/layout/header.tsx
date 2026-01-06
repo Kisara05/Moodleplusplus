@@ -198,7 +198,7 @@ export function Header({
       </div>
 
       <nav style={navStyle}>
-        <Link to="/" style={navLinkStyle}>
+        <Link to="/dashboard?signed_in=1" style={navLinkStyle}>
           {language === "en" ? "Dashboard" : "Trang tổng quan"}
         </Link>
         <Link to="/courses" style={activeNavLinkStyle}>
