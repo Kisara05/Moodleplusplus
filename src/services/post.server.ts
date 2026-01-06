@@ -1,6 +1,6 @@
 import { redirect } from "@remix-run/node";
 import { supabase } from "./supabase.server";
-
+import { insertComment } from "./thread.server"
 interface CreatePostDTO {
   title: string;
   content: string; // The HTML string from Editor
@@ -46,6 +46,16 @@ export async function getPost(sectionId: string, postId: string) {
     return { htmlContent };
 }
 
+export async function getPostTitle(postId: string) {
+    const { data, error } = await supabase
+        .from('posts')
+        .select('title')
+        .eq('post_id', postId)
+        .single();
+    if (error) throw error;
+    return { data };
+}
+
 export async function getThreads(postId: string) {
     const { data, error } = await supabase
         .from('posts')
@@ -66,6 +76,29 @@ export async function getThreads(postId: string) {
         .eq('post_id', postId);
     if (discussionError) throw discussionError;
     return discussions;
+}
+
+export async function createDiscussionThread(postId: string, title: string, firstcontent: string) {
+  console.log("Creating discussion thread", title, "for postId:", postId);
+  const { data: threadData, error: threadError } = await supabase
+    .from("threads")
+    .insert([
+      {
+        post_id: postId,
+        title,
+      },
+    ])
+    .select()
+    .single();
+  if (threadError || !threadData) {
+    console.error("Error creating thread:", threadError);
+    return null;
+  }
+  const threadId = threadData.thread_id;
+  console.log(threadId);
+  console.log("Successfully created thread:", threadId);
+  const error = await insertComment(firstcontent, undefined, threadId);
+  return null;
 }
 
 export async function createPostWithContent({ title, content, sectionId }: CreatePostDTO) {
