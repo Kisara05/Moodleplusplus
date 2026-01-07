@@ -5,6 +5,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [
     remix({
+      appDirectory: "src",
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
@@ -28,8 +29,6 @@ export default defineConfig({
           route("/", "routes/_auth/_layout.tsx", () => {
             route("dashboard", "routes/_auth/dashboard.tsx");
             route("profile", "routes/_auth/profile.tsx");
-            route("student", "routes/_auth/student.tsx");
-            route("teacher", "routes/_auth/teacher.tsx");
             route("courses", "routes/_auth/courses/courses.tsx");
             route("courses/:courseID", "routes/_auth/courses/$courseID.tsx");
           });

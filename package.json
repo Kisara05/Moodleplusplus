@@ -27,6 +27,7 @@
     "@types/node": "^20.14.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "baseline-browser-mapping": "^2.9.11",
     "eslint": "^9.4.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "typescript": "^5.4.5",
