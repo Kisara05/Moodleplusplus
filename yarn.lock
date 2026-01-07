@@ -1713,64 +1713,65 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@supabase/auth-js@npm:2.80.0":
-  version: 2.80.0
-  resolution: "@supabase/auth-js@npm:2.80.0"
+"@supabase/auth-js@npm:2.89.0":
+  version: 2.89.0
+  resolution: "@supabase/auth-js@npm:2.89.0"
   dependencies:
     tslib: "npm:2.8.1"
-  checksum: 10c0/0206663176202a688908719e1499fe1e3ea644d24d8c76adb4085b9595dcda3bb1e6bbd08756d15f56e0167ebe46ce41a4acb4e8a57bdb97fea46a7988fdc461
+  checksum: 10c0/b22e231589791437fd261f1f54d62d286875698b7deb0a8c09b1f5a6c33be781641ef3602ba81767a592765cb0d3e934b03f6804c83eef0983083ed048fdf9a4
   languageName: node
   linkType: hard
 
-"@supabase/functions-js@npm:2.80.0":
-  version: 2.80.0
-  resolution: "@supabase/functions-js@npm:2.80.0"
+"@supabase/functions-js@npm:2.89.0":
+  version: 2.89.0
+  resolution: "@supabase/functions-js@npm:2.89.0"
   dependencies:
     tslib: "npm:2.8.1"
-  checksum: 10c0/b3fd7e8c1b1e371c083b4b0b2ce18753b744a666b4a0d6531de4a41ed2d3c31702096803b47d6d13fde723cab35bd0f9107aeb796549ff8c90d40dda5d30e5d6
+  checksum: 10c0/45f7c98a722500debd1367c271726df5cf53f4be1c8c50f0535a1e58f76ea43867b7eef917876f1232fd6259cfe5deabcbe84b109bec61aa4a7be86073deb01f
   languageName: node
   linkType: hard
 
-"@supabase/postgrest-js@npm:2.80.0":
-  version: 2.80.0
-  resolution: "@supabase/postgrest-js@npm:2.80.0"
+"@supabase/postgrest-js@npm:2.89.0":
+  version: 2.89.0
+  resolution: "@supabase/postgrest-js@npm:2.89.0"
   dependencies:
     tslib: "npm:2.8.1"
-  checksum: 10c0/9b23139d87b236b989dc58b8f0c6b3b84cd1129ed83f239b852f13e77da2e4aa4ae94aa4b07492e1ea39963026b041f961b2e0b22fae1fa83d77be4c692b6f74
+  checksum: 10c0/1232f482c5f93fe249e3d51157e07e82c44dbebf72cee367b1180689d0293cd2874f9f78e4f8d38409d5da2793e9ae96ed18c7e80ad1776c30700a5d05f423bd
   languageName: node
   linkType: hard
 
-"@supabase/realtime-js@npm:2.80.0":
-  version: 2.80.0
-  resolution: "@supabase/realtime-js@npm:2.80.0"
+"@supabase/realtime-js@npm:2.89.0":
+  version: 2.89.0
+  resolution: "@supabase/realtime-js@npm:2.89.0"
   dependencies:
     "@types/phoenix": "npm:^1.6.6"
     "@types/ws": "npm:^8.18.1"
     tslib: "npm:2.8.1"
     ws: "npm:^8.18.2"
-  checksum: 10c0/dd0da28901f39536266eb327f967ced876266876376949b511795739bbfd27bcc9e29a1871910e0fefd047bd3874539c21abd8e0bff8e85b8145ddd586e94fed
+  checksum: 10c0/59f26ae1dd6b53067eed1a37f3e59ee26eb5c84e08b72e0f4a5cb299442b9404f6ba5d7b83d8ebb83ef95b9e4f2842bfe36bfb3824856645bcdfe8a75ec1e210
   languageName: node
   linkType: hard
 
-"@supabase/storage-js@npm:2.80.0":
-  version: 2.80.0
-  resolution: "@supabase/storage-js@npm:2.80.0"
+"@supabase/storage-js@npm:2.89.0":
+  version: 2.89.0
+  resolution: "@supabase/storage-js@npm:2.89.0"
   dependencies:
+    iceberg-js: "npm:^0.8.1"
     tslib: "npm:2.8.1"
-  checksum: 10c0/cbc33692af26979d8dae0342b3dd821bd7fd245da68e1d213e854c1ceddd67d84d6ac09d2bbdd966e68a717e4d8c9d2a9d85cbdd166d73ff06772cfe13a0d2d0
+  checksum: 10c0/fc6ea247b3dce02b5e73c750bc5394c1436843d429ccbf93e4d826033ddb075fcfe4e0947f0ab0baccaef41654124f108b7ae440f4871a77df7fda180c4cc920
   languageName: node
   linkType: hard
 
-"@supabase/supabase-js@npm:^2.43.5":
-  version: 2.80.0
-  resolution: "@supabase/supabase-js@npm:2.80.0"
+"@supabase/supabase-js@npm:^2.89.0":
+  version: 2.89.0
+  resolution: "@supabase/supabase-js@npm:2.89.0"
   dependencies:
-    "@supabase/auth-js": "npm:2.80.0"
-    "@supabase/functions-js": "npm:2.80.0"
-    "@supabase/postgrest-js": "npm:2.80.0"
-    "@supabase/realtime-js": "npm:2.80.0"
-    "@supabase/storage-js": "npm:2.80.0"
-  checksum: 10c0/9daaf845567682d7eed5b4b24afbd346b4e2235254c3dbe8125a3d2d7fd3886421d8acebd85ebede3cd413fe574a3ce505dd2081e977f995360457948ba634c2
+    "@supabase/auth-js": "npm:2.89.0"
+    "@supabase/functions-js": "npm:2.89.0"
+    "@supabase/postgrest-js": "npm:2.89.0"
+    "@supabase/realtime-js": "npm:2.89.0"
+    "@supabase/storage-js": "npm:2.89.0"
+  checksum: 10c0/8662023c1003d317ae433316e42d791560614a06b56f466d7586a2fdf54d34db8b184a0b784046665852756dce06f48909318fc54103cf675ec05c5c6d1757dc
   languageName: node
   linkType: hard
 
@@ -1780,6 +1781,15 @@ __metadata:
   dependencies:
     "@types/estree": "npm:*"
   checksum: 10c0/5a65a1d7e91fc95703f0a717897be60fa7ccd34b17f5462056274a246e6690259fe0a1baabc86fd3260354f87245cb3dc483346d7faad2b78fc199763978ede9
+  languageName: node
+  linkType: hard
+
+"@types/bcryptjs@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@types/bcryptjs@npm:3.0.0"
+  dependencies:
+    bcryptjs: "npm:*"
+  checksum: 10c0/5d61ce381736f8252627cf32f2bbc17003c0361c6cf63ac23034a651b9c1edfdbf8f786730816e0b5257a927ffa369658562183a68495eb07ca2ddc77fbb171c
   languageName: node
   linkType: hard
 
@@ -2119,10 +2129,12 @@ __metadata:
     "@remix-run/node": "npm:^2.9.2"
     "@remix-run/react": "npm:^2.9.2"
     "@remix-run/serve": "npm:^2.9.2"
-    "@supabase/supabase-js": "npm:^2.43.5"
+    "@supabase/supabase-js": "npm:^2.89.0"
+    "@types/bcryptjs": "npm:^3.0.0"
     "@types/node": "npm:^20.14.2"
     "@types/react": "npm:^18.3.3"
     "@types/react-dom": "npm:^18.3.0"
+    bcryptjs: "npm:^3.0.3"
     eslint: "npm:^9.4.0"
     eslint-plugin-react-hooks: "npm:^4.6.2"
     isbot: "npm:^5.1.9"
@@ -2345,6 +2357,15 @@ __metadata:
   dependencies:
     safe-buffer: "npm:5.1.2"
   checksum: 10c0/05f56db3a0fc31c89c86b605231e32ee143fb6ae38dc60616bc0970ae6a0f034172def99e69d3aed0e2c9e7cac84e2d63bc51a0b5ff6ab5fc8808cc8b29923c1
+  languageName: node
+  linkType: hard
+
+"bcryptjs@npm:*, bcryptjs@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "bcryptjs@npm:3.0.3"
+  bin:
+    bcrypt: bin/bcrypt
+  checksum: 10c0/127c94699f07eab5fbbb89d600c3f0e36ae6fd001e028139740b41fffb62a23a2743523fb88f442ae3308a27d4843b97ccb9e436d78f5c5899be187d0972c6d5
   languageName: node
   linkType: hard
 
@@ -4281,6 +4302,13 @@ __metadata:
   version: 2.1.0
   resolution: "human-signals@npm:2.1.0"
   checksum: 10c0/695edb3edfcfe9c8b52a76926cd31b36978782062c0ed9b1192b36bebc75c4c87c82e178dfcb0ed0fc27ca59d434198aac0bd0be18f5781ded775604db22304a
+  languageName: node
+  linkType: hard
+
+"iceberg-js@npm:^0.8.1":
+  version: 0.8.1
+  resolution: "iceberg-js@npm:0.8.1"
+  checksum: 10c0/e504da64cc26e8ad7c5344353a7203c671a740c14eb6086f20505f5e9739cab774493e616032530c962df97f2a855115cc2e89a47dd81581df5917b21a69ec48
   languageName: node
   linkType: hard
 

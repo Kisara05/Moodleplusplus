@@ -1,8 +1,6 @@
-import { useState } from "react";
-// import { Sidebar } from "../components/admin";
-import type { Route } from "./+types/_public.admin";
+import type { MetaFunction } from "~/types/index";
 
-export function meta(_: Route.MetaArgs) {
+export const meta: MetaFunction = () => {
   return [
     { title: "Admin Panel - Moodle++" },
     {
@@ -10,17 +8,16 @@ export function meta(_: Route.MetaArgs) {
       content: "Admin interface for managing Moodle++ platform",
     },
   ];
-}
+};
 
 export default function AdminDashboard() {
-//   const [sidebarOpen, setSidebarOpen] = useState(false);
+  //   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="admin-dashboard">
-        <div>
+      <div>
         {/* Sidebar component for admin navigation */}
         {/* <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} /> */}
-        </div>
+      </div>
     </div>
-
   );
 }

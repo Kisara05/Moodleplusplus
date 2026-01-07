@@ -1,15 +1,13 @@
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
-// import { NewsSection } from "~/components/NewsSection";
-// import { Sidebar } from "~/components/Sidebar";
-// import type { Route } from "~/types/index";
+import type { MetaFunction } from "~/types/index";
 
-// export function meta(_: Route.MetaArgs) {
-//   return [
-//     { title: "Moodle++" },
-//     { name: "description", content: "Main page of Moodle++" },
-//   ];
-// }
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Moodle++" },
+    { name: "description", content: "Main page of Moodle++" },
+  ];
+};
 
 export default function Home() {
   return (

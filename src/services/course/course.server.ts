@@ -1,5 +1,3 @@
-// import { supabase } from ".supabase.server";
-
 // File này sẽ chứa logic backend (CRUD) cho Khóa học
 
 export async function getCourseList() {

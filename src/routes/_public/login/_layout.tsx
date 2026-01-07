@@ -1,5 +1,4 @@
 import { Outlet } from "@remix-run/react";
-import * as React from "react";
 
 // Đây là layout "cha" cho TẤT CẢ các trang public
 export default function PublicLayout() {
