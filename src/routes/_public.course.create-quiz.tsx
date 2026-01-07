@@ -865,7 +865,10 @@ export default function CreateQuiz() {
           {/* Action Buttons */}
           <div style={buttonGroupStyle}>
             <button type="submit" style={saveButtonStyle}>
-              {currentLanguage === "en" ? "Save and return to course" : "Lưu và quay lại khóa học"}
+              {answerType === "multiple_choice"
+                ? (currentLanguage === "en" ? "Next" : "Tiếp theo")
+                : (currentLanguage === "en" ? "Save and return to course" : "Lưu và quay lại khóa học")
+              }
             </button>
             <button
               type="button"

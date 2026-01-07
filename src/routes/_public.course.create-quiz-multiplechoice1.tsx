@@ -43,7 +43,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 interface Question {
   textDescription: string;
-  imageDescription: string;
   imageFile: File | null;
   imagePreview: string | null;
   choices: string[];
@@ -66,7 +65,6 @@ export default function CreateQuizMultipleChoice1() {
     for (let i = 0; i < 25; i++) {
       initial.push({
         textDescription: "",
-        imageDescription: "",
         imageFile: null,
         imagePreview: null,
         choices: ["", "", "", ""],
@@ -92,7 +90,6 @@ export default function CreateQuizMultipleChoice1() {
         } else {
           newQuestions.push({
             textDescription: "",
-            imageDescription: "",
             imageFile: null,
             imagePreview: null,
             choices: ["", "", "", ""],
@@ -202,7 +199,8 @@ export default function CreateQuizMultipleChoice1() {
   };
 
   const rightPanelStyle: React.CSSProperties = {
-    width: "200px",
+    minWidth: "200px",
+    width: "auto",
     display: "flex",
     flexDirection: "column",
     gap: "1rem",
@@ -400,13 +398,24 @@ export default function CreateQuizMultipleChoice1() {
     cursor: "pointer",
   };
 
+  // Calculate number of columns based on question count
+  const getMiniBoardColumns = (): number => {
+    if (numQuestions <= 5) return numQuestions;
+    if (numQuestions <= 10) return 5;
+    if (numQuestions <= 15) return 5;
+    if (numQuestions <= 20) return 5;
+    if (numQuestions <= 25) return 5;
+    return Math.ceil(Math.sqrt(numQuestions)); // For larger numbers, use square root
+  };
+
   const miniBoardStyle: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
+    gridTemplateColumns: `repeat(${getMiniBoardColumns()}, 1fr)`,
     gap: "0.5rem",
     padding: "1rem",
     backgroundColor: "#F5F5F5",
     borderRadius: "8px",
+    width: "100%",
   };
 
   const miniBoardItemStyle = (isCurrent: boolean, isComplete: boolean): React.CSSProperties => ({
@@ -529,22 +538,12 @@ export default function CreateQuizMultipleChoice1() {
             />
           </div>
 
-          {/* Image Description */}
+          {/* Image Upload */}
           <div style={formGroupStyle}>
             <label style={labelStyle}>
-              {currentLanguage === "en" ? "Image description" : "Mô tả hình ảnh"}
+              {currentLanguage === "en" ? "Image" : "Hình ảnh"}
             </label>
-            <div style={imageUploadContainerStyle}>
-              <textarea
-                value={currentQuestion.imageDescription}
-                onChange={(e) => {
-                  const newQuestions = [...questions];
-                  newQuestions[currentQuestionIndex].imageDescription = e.target.value;
-                  setQuestions(newQuestions);
-                }}
-                style={{ ...textareaStyle, flex: 1 }}
-                placeholder={currentLanguage === "en" ? "Enter image description..." : "Nhập mô tả hình ảnh..."}
-              />
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
               <div
                 style={imageUploadBoxStyle}
                 onClick={() => fileInputRef.current?.click()}

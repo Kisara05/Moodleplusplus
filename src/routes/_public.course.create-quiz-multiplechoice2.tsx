@@ -231,36 +231,43 @@ export default function CreateQuizMultipleChoice2() {
     marginBottom: "1rem",
   };
 
-  const choicesContainerStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+  const choicesRowStyle: React.CSSProperties = {
+    display: "flex",
     gap: "1rem",
+    alignItems: "center",
     marginBottom: "1rem",
+    flexWrap: "wrap",
   };
 
-  const choiceInputStyle = (isSelected: boolean): React.CSSProperties => ({
-    width: "100%",
+  const choiceBoxStyle = (isSelected: boolean): React.CSSProperties => ({
+    flex: "1",
+    minWidth: "150px",
     padding: "0.75rem",
     fontSize: "1rem",
     border: isSelected ? "2px solid #0A853F" : "2px solid #D9D9D9",
     borderRadius: "25px",
-    outline: "none",
     fontFamily: "inherit",
     backgroundColor: isSelected ? "#0A853F" : "#FFFFFF",
     color: isSelected ? "#FFFFFF" : "#000000",
-    cursor: "text",
+    cursor: "pointer",
+    textAlign: "center",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "500",
   });
 
   const addChoiceButtonStyle: React.CSSProperties = {
-    padding: "0.5rem 1rem",
+    padding: "0.75rem 1rem",
     backgroundColor: "#FFFFFF",
     color: "#2C8B85",
     border: "2px solid #2C8B85",
-    borderRadius: "8px",
+    borderRadius: "25px",
     fontSize: "0.9rem",
     fontWeight: "500",
     cursor: "pointer",
-    alignSelf: "flex-start",
+    whiteSpace: "nowrap",
+    minWidth: "fit-content",
   };
 
   const buttonContainerStyle: React.CSSProperties = {
@@ -376,26 +383,36 @@ export default function CreateQuizMultipleChoice2() {
                 {currentLanguage === "en" ? "Question" : "Câu hỏi"} {questionIndex + 1}
               </div>
               
-              <div style={choicesContainerStyle}>
-                {question.choices.map((choice, choiceIndex) => (
-                  <input
+              <div style={choicesRowStyle}>
+                {question.choices.slice(0, 4).map((choice, choiceIndex) => (
+                  <div
                     key={choiceIndex}
-                    type="text"
-                    value={choice}
-                    onChange={(e) => handleChoiceChange(questionIndex, choiceIndex, e.target.value)}
                     onClick={() => handleCorrectAnswerSelect(questionIndex, choiceIndex)}
-                    style={choiceInputStyle(question.correctAnswer === choiceIndex)}
-                    placeholder={`${getChoiceLabel(choiceIndex)}. ${currentLanguage === "en" ? "Insert one choice here" : "Nhập một lựa chọn"}`}
-                  />
+                    style={choiceBoxStyle(question.correctAnswer === choiceIndex)}
+                  >
+                    {getChoiceLabel(choiceIndex)}
+                  </div>
                 ))}
+                {question.choices.length > 4 && (
+                  <>
+                    {question.choices.slice(4).map((choice, choiceIndex) => (
+                      <div
+                        key={choiceIndex + 4}
+                        onClick={() => handleCorrectAnswerSelect(questionIndex, choiceIndex + 4)}
+                        style={choiceBoxStyle(question.correctAnswer === choiceIndex + 4)}
+                      >
+                        {getChoiceLabel(choiceIndex + 4)}
+                      </div>
+                    ))}
+                  </>
+                )}
+                <button
+                  style={addChoiceButtonStyle}
+                  onClick={() => handleAddChoice(questionIndex)}
+                >
+                  {currentLanguage === "en" ? "Add more choices" : "Thêm lựa chọn"}
+                </button>
               </div>
-
-              <button
-                style={addChoiceButtonStyle}
-                onClick={() => handleAddChoice(questionIndex)}
-              >
-                {currentLanguage === "en" ? "Add more choices" : "Thêm lựa chọn"}
-              </button>
             </div>
           ))}
         </div>
