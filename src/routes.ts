@@ -48,6 +48,10 @@ export default [
         path: "quiz/:quizID/review/:attemptID",
         file: "src/routes/_public.quiz/$quizID/review/$attemptID.tsx"
       },
+      {
+        path: "quiz/:quizID/grading",
+        file: "src/routes/_auth/teaching/quiz/$quizID/grading.tsx"
+      },
       { path: "threads", file: "src/routes/_public.threads.tsx" },
       {
         path: "threads/:threadID",

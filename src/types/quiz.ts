@@ -23,6 +23,7 @@ export type Quiz = {
   attempt_limit: number | null; // Needed if you want to show "Attempts: 1/3"
   grade: number | null;         // Total points for the quiz
   question: Question[];
+  open_time: string | null;
   deadline: string | null;
 };
 
