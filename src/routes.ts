@@ -36,6 +36,18 @@ export default [
         path: "post/:postID/edit", 
         file: "src/routes/_public.post/edit.tsx"
       },
+      { path: "quiz", file: "src/routes/_public.quiz.tsx" },
+      { path: "quiz/:quizID", 
+        file: "src/routes/_public.quiz/$quizID.tsx" 
+      },
+      {
+        path: "quiz/:quizID/results",
+        file: "src/routes/_public.quiz/$quizID/results.tsx"
+      },
+      {
+        path: "quiz/:quizID/review/:attemptID",
+        file: "src/routes/_public.quiz/$quizID/review/$attemptID.tsx"
+      },
       { path: "threads", file: "src/routes/_public.threads.tsx" },
       {
         path: "threads/:threadID",

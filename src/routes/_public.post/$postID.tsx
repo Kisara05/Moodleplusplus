@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
 import { getPost, getPostInfo, getThreads } from "~/services/post.server";
+import { supabase } from "~/services/supabase.server";
 
 export async function loader({ params }: LoaderFunctionArgs) {
 
@@ -12,12 +13,35 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response("Post ID Missing", { status: 400 });
   }
 
+  // If it's a quiz post, redirect to the quiz page
+  const {data: post_temp, error} = await supabase
+  .from("posts")
+  .select(`
+    post_id,
+    post_type,
+    title,
+    quiz:quiz(quiz_id) 
+  `)
+  .eq("post_id", postId)
+  .single();
+
+  if (error || !post_temp) {
+    throw new Response("Post retrieval error: " + error?.message, { status: 500 });
+  }
+  const linkedQuiz = Array.isArray(post_temp.quiz) ? post_temp.quiz[0] : post_temp.quiz;
+
+  if (post_temp.post_type === "quiz" && linkedQuiz?.quiz_id) {
+    // Use the variable 'linkedQuiz' we just extracted
+    throw redirect(`/quiz/${linkedQuiz.quiz_id}`);
+  }
+
   const post = await getPostInfo(postId);
 
   if (!post) {
     throw new Response("Post is missing", { status: 400 });
   }
 
+  // For non-quiz posts, fetch content and threads
   const content = await getPost(post.section_id, post.post_id);
 
   if (!content) {
