@@ -35,15 +35,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Xử lý chuyển hướng dựa trên Role
   const user = result.user!;
-  let redirectTo = "/dashboard"; // Mặc định cho User
-
-  if (user.role === "admin") {
-    redirectTo = "/admin/dashboard"; // Đường dẫn cho Admin
-  } else if (user.role === "teacher") {
-    redirectTo = "/teacher/dashboard";
-  } else {
-    redirectTo = "/student/dashboard";
-  }
+  let redirectTo = "/dashboard";
 
   // Truyền path chuyển hướng vào session
   return createUserSession(user.id, redirectTo);
@@ -113,16 +105,6 @@ export default function LoginPage() {
           >
             {isSubmitting ? "Signing in..." : "Sign In"}
           </button>
-
-          <p className="text-center text-sm text-gray-600">
-            Don't have an account?{" "}
-            <a
-              href="/register"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Sign up
-            </a>
-          </p>
         </Form>
       </div>
     </div>

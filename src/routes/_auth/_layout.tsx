@@ -1,7 +1,7 @@
 import { Form, Outlet, redirect, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { getUserById } from "../../services/auth/auth.server";
-import { requireUserId } from "../../services/auth/session.server";
+import { getUserById } from "~/services/auth/auth.server";
+import { requireUserId } from "~/services/auth/session.server";
 
 // Define loader return type
 type LoaderData = {
