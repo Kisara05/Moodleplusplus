@@ -10,6 +10,7 @@ export const routesConfig = {
       { path: "", file: "routes/_public/index.tsx", index: true },
       { path: "login", file: "routes/_public/login/login.tsx" },
       { path: "courses", file: "routes/_public/course/index.tsx" },
+      { path: "courses/:courseID", file: "routes/_public/course/$courseID.tsx" },
       { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
       { path: "threads", file: "routes/_public/threads/index.tsx" },
     ],
@@ -41,6 +42,10 @@ export const routesConfig = {
       { path: "users", file: "routes/_admin/users/index.tsx" },
       { path: "users/:userID", file: "routes/_admin/users/$userID.tsx" },
       { path: "courses", file: "routes/_admin/courses/courses.tsx" },
+      { path: "courses/:courseID", file: "routes/_admin/courses/$courseID.tsx" },
+      { path: "courses/:courseID/edit", file: "routes/_admin/courses/$courseID.edit.tsx" },
+      { path: "post/:postID", file: "routes/_admin/post/$postID.tsx" },
+      { path: "post/:postID/edit", file: "routes/_admin/post/edit.tsx" },
     ],
   },
 };
