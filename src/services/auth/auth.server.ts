@@ -33,18 +33,35 @@ export async function login(data: LoginData): Promise<AuthResult> {
     if (signInError || !authData.user) {
       return { error: "Email hoặc mật khẩu không chính xác" };
     }
+    
+    console.log("Auth data:", authData.user.id);
+
+    const { data: profile, error: Error } = await supabaseServer
+      .from("users")
+      .select("id, email, full_name, role")
+
+    if (Error) {
+    }
+    else console.log("Profile data:", profile);
 
     // 2. Lấy thêm thông tin User (role, full_name) từ bảng public.users của bạn
     const { data: userProfile, error: profileError } = await supabaseServer
       .from("users")
-      .select("id, email, full_name, role, avatar_url")
+      .select("id, email, full_name, role")
       .eq("id", authData.user.id) // Khớp ID từ Auth sang table Users
       .single();
 
-    if (profileError || !userProfile) {
+    if (profileError) {
+      console.log(userProfile);
+      console.log("Profile error:", profileError.message);
       // Nếu login thành công nhưng không có profile, có thể do bạn chưa tạo dòng tương ứng trong bảng users
       return {
         error: "Tài khoản chưa được thiết lập profile. Vui lòng liên hệ Admin.",
+      };
+    }
+    if (!userProfile) {
+      return {
+        error: "Không tìm thấy thông tin người dùng.",
       };
     }
 
