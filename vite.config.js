@@ -17,7 +17,6 @@ export default defineConfig({
           route("/", "routes/_public/_layout.tsx", () => {
             route("", "routes/_public/index.tsx", { index: true });
             route("login", "routes/_public/login/login.tsx");
-            route("register", "routes/_public/login/register.tsx");
             route("logout", "routes/_public/login/logout.tsx");
             route("auth-email", "routes/_public/login/auth-email.tsx");
             route("forgot-password", "routes/_public/login/pass-forgot.tsx");
@@ -29,14 +28,16 @@ export default defineConfig({
           route("/", "routes/_auth/_layout.tsx", () => {
             route("dashboard", "routes/_auth/dashboard.tsx");
             route("profile", "routes/_auth/profile.tsx");
-            route("courses", "routes/_auth/courses/courses.tsx");
-            route("courses/:courseID", "routes/_auth/courses/$courseID.tsx");
+            route("courses", "routes/_auth/courses/index.tsx");
+            route(
+              "courses/:courseID",
+              "routes/_auth/courses/$courseID/index.tsx"
+            );
           });
 
           // ADMIN ROUTES
           route("admin", "routes/_admin/_layout.tsx", () => {
             route("", "routes/_admin/index.tsx", { index: true });
-            route("users", "routes/_admin/users/users.tsx");
             route("users/:userID", "routes/_admin/users/$userID.tsx");
             route("courses", "routes/_admin/courses/courses.tsx");
             route("courses/:courseID", "routes/_admin/courses/$courseID.tsx");

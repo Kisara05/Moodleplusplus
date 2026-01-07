@@ -33,8 +33,20 @@ export async function action({ request }: ActionFunctionArgs) {
     return { error: result.error };
   }
 
-  // Create session and redirect
-  return createUserSession(result.user!.id, "/dashboard");
+  // Xử lý chuyển hướng dựa trên Role
+  const user = result.user!;
+  let redirectTo = "/dashboard"; // Mặc định cho User
+
+  if (user.role === "admin") {
+    redirectTo = "/admin/dashboard"; // Đường dẫn cho Admin
+  } else if (user.role === "teacher") {
+    redirectTo = "/teacher/dashboard";
+  } else {
+    redirectTo = "/student/dashboard";
+  }
+
+  // Truyền path chuyển hướng vào session
+  return createUserSession(user.id, redirectTo);
 }
 
 // Component
