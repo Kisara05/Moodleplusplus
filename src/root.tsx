@@ -13,6 +13,8 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: styles },
 ];
 
+import "./tailwind.css";
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
