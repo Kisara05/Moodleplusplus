@@ -8,7 +8,6 @@
 // 6. Yêu cầu admin (requireAdmin)
 
 import { supabaseServer } from "../database/supabase.server";
-// import bcrypt from "bcryptjs";
 import type { AuthResult, AuthUser } from "~/types/models/user";
 
 export type LoginData = {
@@ -37,7 +36,7 @@ export async function login(data: LoginData): Promise<AuthResult> {
     // 2. Lấy thêm thông tin User (role, full_name) từ bảng public.users của bạn
     const { data: userProfile, error: profileError } = await supabaseServer
       .from("users")
-      .select("id, email, full_name, role, avatar_url")
+      .select("id, email, full_name, role")
       .eq("id", authData.user.id) // Khớp ID từ Auth sang table Users
       .single();
 
@@ -60,7 +59,7 @@ export async function getUserById(userId: string): Promise<AuthUser | null> {
   try {
     const { data: user, error } = await supabaseServer
       .from("users")
-      .select("id, email, full_name, role, avatar_url, created_at")
+      .select("id, email, full_name, role")
       .eq("id", userId)
       .single();
 
@@ -85,7 +84,7 @@ export async function updateUserProfile(
       .from("users")
       .update(data)
       .eq("id", userId)
-      .select("id, email, full_name, role, avatar_url, created_at")
+      .select("id, email, full_name, role")
       .single();
 
     if (error || !user) {
