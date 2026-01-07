@@ -15,65 +15,124 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return { sectionId };
 }
 
-// --- 3. ACTION: Handle Post Creation ---
 export async function action({ request, params }: ActionFunctionArgs) {
   const formData = await request.formData();
+  
+  // Extract fields
   const title = formData.get("title") as string;
-  const content = formData.get("content") as string; // The HTML string from Editor
-  const sectionId = params.courseID; // Locked to the URL
+  const content = formData.get("content") as string;
+  const postType = formData.get("postType") as string; // 'material' | 'discussion'
+  const sectionId = params.courseID;
 
-  if (!title || !content || !sectionId) {
-    return { error: "Title and Content are required" ,  status: 400 };
+  if (!title || !content || !sectionId || !postType) {
+    return json({ error: "Title and Content are required" }, { status: 400 });
   }
 
-  return createPostWithContent({ title, content, sectionId });
+  // Pass the 'type' to your service
+  // Ensure your createPostWithContent function accepts this new property!
+  return createPostWithContent({ 
+    title, 
+    content, 
+    sectionId, 
+    post_type: postType || 'post' 
+  });
 }
 
-// --- 4. COMPONENT: The UI ---
+// --- 4. COMPONENT ---
 export default function CreatePostScoped() {
   const params = useParams();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
-  // State to hold the HTML from the editor
+  // State
   const [editorContent, setEditorContent] = useState("");
+  const [postType, setPostType] = useState<"post" | "discussion" | "quiz">("post");
 
   return (
-    <div className="max-w-4xl mx-auto p-8 bg-white shadow-sm border rounded-lg mt-8">
+    <div className="max-w-4xl mx-auto p-8 bg-white shadow-sm border border-gray-200 rounded-lg mt-8">
+      
+      {/* Header */}
       <div className="mb-6 border-b pb-4">
-        <span className="text-sm text-gray-500 uppercase tracking-wide font-bold">
+        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
           Section: {params.courseID}
         </span>
-        <h1 className="text-3xl font-bold text-gray-900 mt-1">Create New Post</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mt-1">Create New Content</h1>
       </div>
 
+      {/* Error Message */}
       {actionData?.error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded mb-6 border border-red-200">
-          ⚠️ {actionData.error}
+        <div className="bg-red-50 text-red-600 p-4 rounded mb-6 border border-red-200 flex items-center gap-2">
+          <span>⚠️</span> {actionData.error}
         </div>
       )}
 
       <Form method="post" className="space-y-6">
+        
+        {/* --- TYPE SELECTOR (Tabs) --- */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Content Type</label>
+          <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
+            <button
+              type="button"
+              onClick={() => setPostType("post")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                postType === "post"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              📖 Learning Post
+            </button>
+            <button
+              type="button"
+              onClick={() => setPostType("discussion")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                postType === "discussion"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              💬 Discussion Topic
+            </button>
+            <button
+              type="button"
+              onClick={() => setPostType("quiz")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                postType === "quiz"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              ❓ Quiz
+            </button>
+          </div>
+          {/* Hidden Input to send the selection */}
+          <input type="hidden" name="postType" value={postType} />
+        </div>
+
         {/* Title Input */}
         <div>
-          <label className="block font-semibold text-gray-700 mb-2">Title</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            {postType === "post" ? "Title" : "Topic Subject"}
+          </label>
           <input
             type="text"
             name="title"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-            placeholder="e.g. Chapter 1 Summary"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition"
+            placeholder={postType === "post" ? "e.g. Chapter 1 Summary" : "e.g. Question about the assignment..."}
             required
           />
         </div>
 
-        {/* Rich Text Editor */}
+        {/* Content Editor */}
         <div>
-          <label className="block font-semibold text-gray-700 mb-2">Content</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            {postType === "post" ? "Content" : "Message"}
+          </label>
           
-          <div className="border border-gray-300 rounded-lg overflow-hidden">
-            <Suspense fallback={<div className="h-64 bg-gray-50 animate-pulse p-4 text-gray-400">Loading Editor...</div>}>
-              {/* Only render on client to avoid SSR issues with Quill */}
+          <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition">
+            <Suspense fallback={<div className="h-64 bg-gray-50 p-4 text-gray-400 flex items-center justify-center">Loading Editor...</div>}>
               {typeof window !== "undefined" && (
                 <Editor
                   value={editorContent}
@@ -82,24 +141,33 @@ export default function CreatePostScoped() {
               )}
             </Suspense>
           </div>
-
-          {/* HIDDEN INPUT: Transfers the Editor state to the Form Action */}
+          {/* Hidden Input for Editor Data */}
           <input type="hidden" name="content" value={editorContent} />
+          
+          {/* Helper Text */}
+          <p className="text-xs text-gray-400 mt-2">
+            {postType === "post" 
+              ? "Use this area to write full lecture notes, add images, or embed videos."
+              : "Describe the topic you want to discuss. Others can reply to this thread."}
+          </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 pt-8">
+        <div className="flex gap-3 pt-6 border-t border-gray-100">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+            className="bg-blue-600 text-white py-2.5 px-6 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 shadow-sm"
           >
-            {isSubmitting ? "Publishing..." : "Publish Post"}
+            {isSubmitting 
+              ? "Publishing..." 
+              : postType === "post" ? "Publish Post" : "Start Discussion"
+            }
           </button>
 
           <a
             href={`/courses/${params.courseID}`}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center"
+            className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center font-medium"
           >
             Cancel
           </a>
