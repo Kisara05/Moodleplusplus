@@ -222,7 +222,7 @@ export default function CourseView() {
 
   return (
     <div style={containerStyle}>
-      <Header isLoggedIn={true} />
+      <Header signed_in={true} />
       <div style={topButtonsStyle}>
         <button style={topButtonStyle}></button>
         <button style={topButtonStyle}></button>

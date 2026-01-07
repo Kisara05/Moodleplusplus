@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useNavigate } from "@remix-run/react";
+import { Link, useNavigate, useLocation } from "@remix-run/react";
 
 type HeaderProps = {
   signed_in?: boolean;
@@ -17,6 +17,12 @@ export function Header({
   userId = "123"
 }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Determine which nav link should be active based on current pathname
+  const isDashboard = location.pathname === "/dashboard" || location.pathname.startsWith("/dashboard");
+  const isMyCourses = location.pathname === "/courses" || location.pathname === "/" || location.pathname.startsWith("/courses/");
+  const isCourseRegistration = location.pathname === "/course-registration" || location.pathname.startsWith("/course-registration");
 
   const [showHelp, setShowHelp] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
@@ -192,21 +198,22 @@ export function Header({
   return (
     <header style={headerStyle}>
       <div style={logoStyle}>
-        <Link to={`/?signed_in=1&user_flag=${user_flag}`} style={logoStyle}>
+        <Link to={`/courses?signed_in=1&user_flag=${user_flag}`} style={logoStyle}>
           Moodle++
         </Link>
       </div>
 
       <nav style={navStyle}>
-        <Link to="/dashboard?signed_in=1" style={navLinkStyle}>
+        <Link to="/dashboard?signed_in=1" style={isDashboard ? activeNavLinkStyle : navLinkStyle}>
           {language === "en" ? "Dashboard" : "Trang tổng quan"}
         </Link>
-        <Link to="/courses" style={activeNavLinkStyle}>
+        <Link to="/courses" style={isMyCourses ? activeNavLinkStyle : navLinkStyle}>
           {language === "en" ? "My courses" : "Khóa học của tôi"}
         </Link>
         {user_flag === 1 && (
           <Link 
-            to={`/course-registration?signed_in=1&user_flag=${user_flag}&userId=${userId}`}  style={navLinkStyle}>
+            to={`/course-registration?signed_in=1&user_flag=${user_flag}&userId=${userId}`}  
+            style={isCourseRegistration ? activeNavLinkStyle : navLinkStyle}>
             {language === "en" ? "Course registration" : "Đăng kí học phần"}
           </Link>
         )}

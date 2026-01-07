@@ -74,7 +74,7 @@ export default function CourseDetail() {
 
   const [expandAllText, setExpandAllText] = React.useState("Expand all");
 
-  // Update expand all text based on section states
+  // Update expand all text based on section states and language
   React.useEffect(() => {
     const allExpanded =
       expandedSections.general &&
@@ -82,8 +82,12 @@ export default function CourseDetail() {
       expandedSections.lectures &&
       expandedSections.lab &&
       expandedSections.project;
-    setExpandAllText(allExpanded ? "Collapse all" : "Expand all");
-  }, [expandedSections]);
+    if (currentLanguage === "vi") {
+      setExpandAllText(allExpanded ? "Thu gọn toàn bộ" : "Mở rộng tất cả");
+    } else {
+      setExpandAllText(allExpanded ? "Collapse all" : "Expand all");
+    }
+  }, [expandedSections, currentLanguage]);
 
   // Close settings menu when clicking outside
   React.useEffect(() => {
@@ -498,7 +502,9 @@ export default function CourseDetail() {
       <main style={mainStyle}>
         <div style={filterButtonsStyle}>
           <button style={filterButtonStyle}>2025-2026</button>
-          <button style={filterButtonStyle}>Semester 1</button>
+          <button style={filterButtonStyle}>
+            {language === "en" ? "Semester 1" : "Học kỳ 1"}
+          </button>
           <button style={filterButtonStyle}>Advanced Program (APCS)</button>
         </div>
 
@@ -506,12 +512,24 @@ export default function CourseDetail() {
 
         <div style={tabsContainerStyle}>
           <div style={tabsStyle}>
-            <button style={activeTabStyle}>Course</button>
-            <button style={tabStyle}>Settings</button>
-            <button style={tabStyle}>Grades</button>
-            <button style={tabStyle}>Participants</button>
-            <button style={tabStyle}>Reports</button>
-            <button style={tabStyle}>More</button>
+            <button style={activeTabStyle}>
+              {language === "en" ? "Course" : "Khóa học"}
+            </button>
+            <button style={tabStyle}>
+              {language === "en" ? "Settings" : "Cài đặt"}
+            </button>
+            <button style={tabStyle}>
+              {language === "en" ? "Grades" : "Điểm"}
+            </button>
+            <button style={tabStyle}>
+              {language === "en" ? "Participants" : "Danh sách thành viên"}
+            </button>
+            <button style={tabStyle}>
+              {language === "en" ? "Reports" : "Báo cáo"}
+            </button>
+            <button style={tabStyle}>
+              {language === "en" ? "More" : "Thêm"}
+            </button>
           </div>
           <button style={expandAllButtonStyle} onClick={toggleAllSections}>
             {expandAllText}
@@ -524,7 +542,9 @@ export default function CourseDetail() {
             style={getSectionHeaderStyle(expandedSections.general)}
             onClick={() => toggleSection("general")}
           >
-            <div style={sectionTitleStyle}>General</div>
+            <div style={sectionTitleStyle}>
+              {language === "en" ? "General" : "Tổng quan"}
+            </div>
             <button style={toggleButtonStyle}>
               {expandedSections.general ? "▼" : "▶"}
             </button>

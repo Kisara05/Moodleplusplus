@@ -33,7 +33,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (result && result.success) {
       // Create session or set cookie here
       // For now, redirect to home with signed_in flag
-      return redirect(`/?signed_in=1&user_flag=${result.user_flag || 1}&lang=${language}`);
+      return redirect(`/courses?signed_in=1&user_flag=${result.user_flag || 1}&lang=${language}`);
     } else {
       return json(
         { error: result?.error || (language === "en" ? "Invalid credentials" : "Thông tin đăng nhập không hợp lệ") },

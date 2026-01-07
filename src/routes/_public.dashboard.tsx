@@ -234,18 +234,22 @@ export default function Dashboard() {
   return (
     <div style={containerStyle}>
       <Header
-        signed_in={signed_in}
+        signed_in={true} // REMINDER: Change this to {signed_in}
         user_flag={user_flag}
         language={currentLanguage}
         onLanguageChange={toggleLanguage}
         userId={userId}
       />
       <main style={mainStyle}>
-        <h1 style={dashboardTitleStyle}>Dashboard</h1>
+        <h1 style={dashboardTitleStyle}>
+          {language === "en" ? "Dashboard" : "Trang tổng quan"}
+        </h1>
 
         {/* Calendar Section */}
         <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>Calendar</h2>
+          <h2 style={sectionTitleStyle}>
+            {language === "en" ? "Calendar" : "Lịch"}
+          </h2>
           <div style={calendarContainerStyle}>
             <div style={calendarHeaderStyle}>
               <div style={monthNavigationStyle}>
@@ -266,17 +270,21 @@ export default function Dashboard() {
 
         {/* Recently accessed courses Section */}
         <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>Recently accessed courses</h2>
+          <h2 style={sectionTitleStyle}>
+            {language === "en" ? "Recently accessed courses" : "Khóa học truy cập gần đây"}
+          </h2>
           <div style={placeholderStyle}>
-            This feature will be implemented later
+            {language === "en" ? "This feature will be implemented later" : "Tính năng này sẽ được thực hiện sau"}
           </div>
         </div>
 
         {/* Timeline Section */}
         <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>Timeline</h2>
+          <h2 style={sectionTitleStyle}>
+            {language === "en" ? "Timeline" : "Mốc thời gian"}
+          </h2>
           <div style={placeholderStyle}>
-            This feature will be implemented later
+            {language === "en" ? "This feature will be implemented later" : "Tính năng này sẽ được thực hiện sau"}
           </div>
         </div>
       </main>
