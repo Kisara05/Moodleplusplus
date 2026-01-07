@@ -27,7 +27,7 @@ export const routesConfig = {
       },
       {
         path: "teaching/:courseID",
-        file: "routes/_auth/teaching/$courseID/index.tsx",
+        file: "routes/_auth/teaching/index.tsx",
       },
     ],
   },
