@@ -31,9 +31,12 @@ export function Header({
   const [showUserMenu, setShowUserMenu] = React.useState(false);
 
   // Get user data when signed in (safely get from route loader)
+  // Check both auth and public layouts for user data
   type AuthLayoutData = { user: AuthUser };
+  type PublicLayoutData = { user: AuthUser | null };
   const authData = useRouteLoaderData<AuthLayoutData>("routes/_auth/_layout");
-  const user = signed_in && authData ? authData.user : null;
+  const publicData = useRouteLoaderData<PublicLayoutData>("routes/_public/_layout");
+  const user = signed_in && (authData?.user || publicData?.user) ? (authData?.user || publicData?.user) : null;
 
   /* =========================
      SHARED STYLES (RECTANGULAR)

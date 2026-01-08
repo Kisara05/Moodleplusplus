@@ -1,19 +1,31 @@
 import * as React from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { getSectionById } from "~/services/course.server";
 import { getAllPosts } from "~/services/post.server";
+import { getUserById } from "~/services/auth/auth.server";
+import { getUserId } from "~/services/auth/session.server";
 import { Header } from "~/components/layout/header";
 import { Footer } from "~/components/layout/footer";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
+  // Get user from session
+  const userId = await getUserId(request);
+  if (!userId) {
+    return redirect("/login");
+  }
+
+  const user = await getUserById(userId);
+  if (!user) {
+    return redirect("/login");
+  }
+
   console.log(params);
   const courseId = params.courseID;
   const url = new URL(request.url);
-  const user_flag = parseInt(url.searchParams.get("user_flag") || "1");
   const language = (url.searchParams.get("lang") as "en" | "vi") || "en";
-  const userId = url.searchParams.get("userId") || "123";
+  const user_flag = user.role === "student" ? 1 : 0;
   
   console.log(courseId);
   if (!courseId) {
@@ -34,12 +46,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     posts: posts,
     user_flag,
     language,
-    userId,
+    userId: user.id,
+    user,
   });
 }
 
 export default function CourseDetail() {
-  const { course, posts, user_flag, language, userId } = useLoaderData<typeof loader>();
+  const { course, posts, user_flag, language, userId, user } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentLanguage, setCurrentLanguage] = React.useState<"en" | "vi">(language);
   const [showModal, setShowModal] = React.useState(false);

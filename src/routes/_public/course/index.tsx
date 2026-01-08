@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import {
   useLoaderData,
   useNavigate,
@@ -8,6 +8,8 @@ import {
 import { useState } from "react";
 
 import { getSectionList } from "~/services/course.server";
+import { getUserById } from "~/services/auth/auth.server";
+import { getUserId } from "~/services/auth/session.server";
 import { Header } from "~/components/layout/header";
 import { Footer } from "~/components/layout/footer";
 
@@ -15,6 +17,17 @@ import { Footer } from "~/components/layout/footer";
    Loader (BACKEND)
 ========================= */
 export async function loader({ request }: LoaderFunctionArgs) {
+  // Get user from session
+  const userId = await getUserId(request);
+  if (!userId) {
+    return redirect("/login");
+  }
+
+  const user = await getUserById(userId);
+  if (!user) {
+    return redirect("/login");
+  }
+
   const courses = await getSectionList();
 
   // Flatten backend response
@@ -28,18 +41,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
     teachers: ["Nguyễn Hải Đăng", "Nguyễn Ngọc Thảo", "Nguyễn Thanh Tình"],
   }));
 
-  // TEMP session-like data (until session is enforced everywhere)
   const signed_in = true;
-  const user_flag = 1;
+  const user_flag = user.role === "student" ? 1 : 0;
   const language: "en" | "vi" = "en";
-  const userId = "123";
 
   return json({
     courses: flatSections,
     signed_in,
     user_flag,
     language,
-    userId,
+    userId: user.id,
+    user,
   });
 }
 
@@ -47,7 +59,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
    Component (UI)
 ========================= */
 export default function CoursesList() {
-  const { courses, signed_in, user_flag, language, userId } =
+  const { courses, signed_in, user_flag, language, userId, user } =
     useLoaderData<typeof loader>();
 
   const navigate = useNavigate();
@@ -132,6 +144,19 @@ export default function CoursesList() {
     cursor: "pointer",
   };
 
+    const courseNameStyle: React.CSSProperties = {
+    fontSize: "1.1rem",
+    fontWeight: "bold",
+    color: "#000000",
+    marginBottom: "1rem",
+  };
+
+  const teacherStyle: React.CSSProperties = {
+    fontSize: "0.9rem",
+    color: "#565656",
+    marginBottom: "0.5rem",
+  };
+
   /* =========================
      Render
   ========================= */
@@ -171,21 +196,27 @@ export default function CoursesList() {
           </h2>
 
           {courses.map((course) => (
-            <div
-              key={course.section_id}
-              style={courseCardStyle}
-              onClick={() => handleCourseClick(course.section_id)}
-            >
-              <div style={{ fontWeight: "bold" }}>
-                {course.course_name}
+              <div
+                key={course.section_id}
+                style={courseCardStyle}
+                onClick={() => handleCourseClick(course.section_id)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <div style={courseNameStyle}>{course.course_name}</div>
+                {course.teachers.map((teacher, index) => (
+                  <div key={index} style={teacherStyle}>
+                    Teacher: {teacher}
+                  </div>
+                ))}
               </div>
-              {course.teachers.map((t, i) => (
-                <div key={i} style={{ fontSize: "0.9rem" }}>
-                  Teacher: {t}
-                </div>
-              ))}
-            </div>
-          ))}
+            ))}
         </div>
 
         <div style={sectionStyle}>
