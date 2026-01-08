@@ -43,18 +43,6 @@ export default [
         path: "courses/:courseID/create-quiz-multiplechoice2", 
         file: "src/routes/_public.course.create-quiz-multiplechoice2.tsx" 
       },
-      { 
-        path: "courses/:courseID/take-quiz-1", 
-        file: "src/routes/_public.course.take-quiz-1.tsx" 
-      },
-      { 
-        path: "courses/:courseID/take-quiz-2", 
-        file: "src/routes/_public.course.take-quiz-2.tsx" 
-      },
-      { 
-        path: "courses/:courseID/take-quiz-free-response", 
-        file: "src/routes/_public.course.take-quiz-free-response.tsx" 
-      },
       { path: "post", file: "src/routes/_public.post.tsx" },
       { 
         path: "post/:postID", 
