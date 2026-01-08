@@ -93,8 +93,28 @@ export default function CreateQuizMultipleChoice2() {
 
   const handleAddChoice = (questionIndex: number) => {
     const newQuestions = [...questions];
-    newQuestions[questionIndex].choices.push("");
-    setQuestions(newQuestions);
+    if (newQuestions[questionIndex].choices.length < 10) {
+      newQuestions[questionIndex].choices.push("");
+      setQuestions(newQuestions);
+    }
+  };
+
+  const handleRemoveChoice = (questionIndex: number) => {
+    const newQuestions = [...questions];
+    const currentChoices = newQuestions[questionIndex].choices;
+    if (currentChoices.length > 2) {
+      const lastIndex = currentChoices.length - 1;
+      // If removing the correct answer, reset it
+      if (newQuestions[questionIndex].correctAnswer === lastIndex) {
+        newQuestions[questionIndex].correctAnswer = null;
+      } else if (newQuestions[questionIndex].correctAnswer !== null && 
+                 newQuestions[questionIndex].correctAnswer > lastIndex) {
+        // If correct answer index is beyond the last index, adjust it
+        newQuestions[questionIndex].correctAnswer = null;
+      }
+      newQuestions[questionIndex].choices.pop();
+      setQuestions(newQuestions);
+    }
   };
 
   const handleChoiceChange = (questionIndex: number, choiceIndex: number, value: string) => {
@@ -111,9 +131,9 @@ export default function CreateQuizMultipleChoice2() {
 
   const isQuestionComplete = (index: number): boolean => {
     const q = questions[index];
-    // For multiplechoice2, choices are static labels (A, B, C, D)
-    // Only need to check if correct answer is selected
-    return q.correctAnswer !== null;
+    // For multiplechoice2, choices are static labels (A, B, C, D, etc.)
+    // Need at least 2 choices and correct answer selected
+    return q.choices.length >= 2 && q.correctAnswer !== null;
   };
 
   const allQuestionsComplete = (): boolean => {
@@ -261,18 +281,34 @@ export default function CreateQuizMultipleChoice2() {
     fontWeight: "500",
   });
 
-  const addChoiceButtonStyle: React.CSSProperties = {
+  const addChoiceButtonStyle = (disabled: boolean): React.CSSProperties => ({
     padding: "0.75rem 1rem",
     backgroundColor: "#FFFFFF",
-    color: "#2C8B85",
-    border: "2px solid #2C8B85",
+    color: disabled ? "#999" : "#2C8B85",
+    border: `2px solid ${disabled ? "#D9D9D9" : "#2C8B85"}`,
     borderRadius: "25px",
     fontSize: "0.9rem",
     fontWeight: "500",
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "nowrap",
     minWidth: "fit-content",
-  };
+    opacity: disabled ? 0.6 : 1,
+  });
+
+  const removeChoiceButtonStyle = (disabled: boolean): React.CSSProperties => ({
+    padding: "0.75rem 1rem",
+    backgroundColor: disabled ? "#D9D9D9" : "#FF6B35",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "25px",
+    fontSize: "0.9rem",
+    fontWeight: "500",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    minWidth: "fit-content",
+    opacity: disabled ? 0.6 : 1,
+    marginLeft: "0.5rem",
+  });
 
   const buttonContainerStyle: React.CSSProperties = {
     display: "flex",
@@ -411,10 +447,18 @@ export default function CreateQuizMultipleChoice2() {
                   </>
                 )}
                 <button
-                  style={addChoiceButtonStyle}
+                  style={addChoiceButtonStyle(question.choices.length >= 10)}
                   onClick={() => handleAddChoice(questionIndex)}
+                  disabled={question.choices.length >= 10}
                 >
                   {currentLanguage === "en" ? "Add more choices" : "Thêm lựa chọn"}
+                </button>
+                <button
+                  style={removeChoiceButtonStyle(question.choices.length <= 2)}
+                  onClick={() => handleRemoveChoice(questionIndex)}
+                  disabled={question.choices.length <= 2}
+                >
+                  {currentLanguage === "en" ? "Remove a choice" : "Xóa lựa chọn"}
                 </button>
               </div>
             </div>

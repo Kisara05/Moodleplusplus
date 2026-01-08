@@ -73,7 +73,7 @@ export default function CreateQuizMultipleChoice1() {
         textDescription: "",
         imageFile: null,
         imagePreview: null,
-        choices: ["", "", "", ""],
+        choices: ["", ""], // Start with 2 choices (minimum)
         correctAnswer: null,
       });
     }
@@ -98,7 +98,7 @@ export default function CreateQuizMultipleChoice1() {
             textDescription: "",
             imageFile: null,
             imagePreview: null,
-            choices: ["", "", "", ""],
+            choices: ["", ""], // Start with 2 choices (minimum)
             correctAnswer: null,
           });
         }
@@ -136,6 +136,34 @@ export default function CreateQuizMultipleChoice1() {
     }
   };
 
+  const handleAddChoice = () => {
+    const newQuestions = [...questions];
+    const currentChoices = newQuestions[currentQuestionIndex].choices;
+    if (currentChoices.length < 10) {
+      newQuestions[currentQuestionIndex].choices.push("");
+      setQuestions(newQuestions);
+    }
+  };
+
+  const handleRemoveChoice = () => {
+    const newQuestions = [...questions];
+    const currentChoices = newQuestions[currentQuestionIndex].choices;
+    if (currentChoices.length > 2) {
+      const lastIndex = currentChoices.length - 1;
+      // If removing the correct answer, reset it
+      if (newQuestions[currentQuestionIndex].correctAnswer === lastIndex) {
+        newQuestions[currentQuestionIndex].correctAnswer = null;
+      } else if (newQuestions[currentQuestionIndex].correctAnswer !== null && 
+                 newQuestions[currentQuestionIndex].correctAnswer > lastIndex) {
+        // If correct answer index is beyond the last index, adjust it
+        // This shouldn't happen, but just in case
+        newQuestions[currentQuestionIndex].correctAnswer = null;
+      }
+      newQuestions[currentQuestionIndex].choices.pop();
+      setQuestions(newQuestions);
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -154,6 +182,7 @@ export default function CreateQuizMultipleChoice1() {
     const q = questions[index];
     return (
       q.textDescription.trim() !== "" &&
+      q.choices.length >= 2 &&
       q.choices.every(c => c.trim() !== "") &&
       q.correctAnswer !== null
     );
@@ -627,6 +656,42 @@ export default function CreateQuizMultipleChoice1() {
               <span style={{ fontSize: "0.9rem", color: "#565656" }}>
                 {currentLanguage === "en" ? "Correct answer" : "Câu trả lời đúng"}
               </span>
+              <button
+                onClick={handleAddChoice}
+                disabled={currentQuestion.choices.length >= 10}
+                style={{
+                  padding: "0.5rem 1rem",
+                  backgroundColor: currentQuestion.choices.length >= 10 ? "#D9D9D9" : "#2C8B85",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.875rem",
+                  fontWeight: "500",
+                  cursor: currentQuestion.choices.length >= 10 ? "not-allowed" : "pointer",
+                  opacity: currentQuestion.choices.length >= 10 ? 0.6 : 1,
+                  marginLeft: "1rem",
+                }}
+              >
+                {currentLanguage === "en" ? "Add more choices" : "Thêm lựa chọn"}
+              </button>
+              <button
+                onClick={handleRemoveChoice}
+                disabled={currentQuestion.choices.length <= 2}
+                style={{
+                  padding: "0.5rem 1rem",
+                  backgroundColor: currentQuestion.choices.length <= 2 ? "#D9D9D9" : "#FF6B35",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.875rem",
+                  fontWeight: "500",
+                  cursor: currentQuestion.choices.length <= 2 ? "not-allowed" : "pointer",
+                  opacity: currentQuestion.choices.length <= 2 ? 0.6 : 1,
+                  marginLeft: "0.5rem",
+                }}
+              >
+                {currentLanguage === "en" ? "Remove a choice" : "Xóa lựa chọn"}
+              </button>
             </div>
 
             {isAnswerMode ? (
