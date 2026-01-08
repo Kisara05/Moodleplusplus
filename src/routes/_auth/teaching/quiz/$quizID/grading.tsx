@@ -4,11 +4,17 @@ import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from
 import { useLoaderData, useSearchParams, Form, useSubmit, useNavigation } from "@remix-run/react";
 import { createClient } from "@supabase/supabase-js";
 import { useState } from "react";
-import { updateEssayGrade } from "~/services/quiz.server"; // The service we wrote earlier
+import { getQuizById, updateEssayGrade } from "~/services/quiz.server";
 
 // --- LOADER: FETCH LIST + SELECTED ATTEMPT ---
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const quizId = Number(params.quizID);
+
+  const quiz_tmp = await getQuizById(quizId);
+  if (!quiz_tmp) {
+    throw new Response("Quiz not found", { status: 404 });
+  }
+
   const url = new URL(request.url);
   const selectedAttemptId = url.searchParams.get("attemptId");
   
@@ -24,7 +30,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     .eq("quiz_id", quizId)
     .single();
 
-  // 2. Fetch ALL Attempts (For Sidebar) -> UPDATED TO JOIN STUDENT
+  // 2. Fetch ALL Attempts (For Sidebar)
   const { data: attemptsList } = await supabase
     .from("student_quiz_record")
     .select(`
@@ -33,7 +39,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       grade, 
       submitted_at,
       student ( student_name )  
-    `) // <--- We now fetch the related student object
+    `)
     .eq("quiz_id", quizId)
     .not("submitted_at", "is", null)
     .order("submitted_at", { ascending: false });
@@ -41,19 +47,20 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // 3. If an ID is selected, fetch the Full Details
   let selectedData = null;
   if (selectedAttemptId) {
-    // A. The Attempt Record -> UPDATED TO JOIN STUDENT
+    // A. The Attempt Record
     const { data: attempt } = await supabase
       .from("student_quiz_record")
-      .select("*, student ( student_name )") // <--- Join here too
+      .select("*, student ( student_name )") 
       .eq("attempt_id", selectedAttemptId)
       .single();
 
-    // ... (Rest of Step B and C remains exactly the same) ...
+    // B. Full Quiz Questions
+    // ✅ FIX: Added 'image_url' to the select query
     const { data: fullQuiz } = await supabase
       .from("quiz")
       .select(`
         question (
-          question_id, html_content, grade, is_multiple_choice,
+          question_id, html_content, grade, is_multiple_choice, image_url,
           choice_multiple_question (choice_id, html_content, is_correct, grade)
         )
       `)
@@ -96,31 +103,23 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     process.env.SUPABASE_URL!, 
     process.env.SUPABASE_ANON_KEY!
   );
+
   if (intent === "delete") {
-    // 1. Delete Multiple Choice Records
     await supabase.from("student_choice_multiple_record").delete().eq("attempt_id", attemptId);
-    
-    // 2. Delete Essay Records
     await supabase.from("student_essay_question_record").delete().eq("attempt_id", attemptId);
-
-    // 3. Delete Question Records (Scores/Feedback)
     await supabase.from("student_question_record").delete().eq("attempt_id", attemptId);
-
-    // 4. Delete the Main Quiz Record (Parent)
     const { error } = await supabase.from("student_quiz_record").delete().eq("attempt_id", attemptId);
 
     if (error) {
         return json({ success: false, error: error.message });
     }
-
-    // Redirect to the main grading list (remove query params)
     return redirect(`/quiz/${params.quizID}/grading`);
   }
+
   const questionId = Number(formData.get("questionId"));
   const newGrade = Number(formData.get("grade"));
   const feedback = String(formData.get("feedback") || "");
 
-  // Calls the service we wrote earlier to Update, Re-Sum, and Clamp
   await updateEssayGrade(attemptId, questionId, newGrade, feedback);
 
   return json({ success: true });
@@ -133,10 +132,25 @@ export default function GradingConsole() {
   const submit = useSubmit();
   const navigation = useNavigation();
 
-  // Track which question ID shows a warning
   const [warningQId, setWarningQId] = useState<number | null>(null);
 
-  // Handle Input Logic (Enforce Max Score)
+  // --- NEW: Calculate Duration Helper ---
+  const calculateDuration = () => {
+    if (!selectedData?.attempt?.started_at || !selectedData?.attempt?.submitted_at) return "--:--:--";
+    
+    const start = new Date(selectedData.attempt.started_at).getTime();
+    const end = new Date(selectedData.attempt.submitted_at).getTime();
+    const diff = end - start;
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  const durationString = calculateDuration();
+
   const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>, max: number, qId: number) => {
     const val = parseFloat(e.target.value);
     if (val > max) {
@@ -146,7 +160,6 @@ export default function GradingConsole() {
     }
   };
 
-  // Helper to handle auto-saving on blur
   const handleBlur = (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>, 
     qId: number, 
@@ -187,7 +200,6 @@ export default function GradingConsole() {
                     : "bg-white border-gray-200 hover:bg-gray-50"
                 }`}
                 >
-                {/* 1. SELECT BUTTON (Invisible Overlay or just the main text area) */}
                 <button
                     onClick={() => setSearchParams({ attemptId: String(att.attempt_id) })}
                     className="flex-1 text-left min-w-0"
@@ -202,7 +214,6 @@ export default function GradingConsole() {
                         </span>
                     </div>
                     
-                    {/* Grade Pill */}
                     <span className={`text-xs font-mono px-2 py-0.5 rounded shrink-0 ${
                         Number(att.grade) >= (quiz?.grade || 0) * 0.8 
                         ? "bg-green-100 text-green-700" 
@@ -217,7 +228,6 @@ export default function GradingConsole() {
                     </div>
                 </button>
 
-                {/* 2. DELETE BUTTON (Appears on Hover) */}
                 <Form 
                     method="post" 
                     className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100"
@@ -235,7 +245,6 @@ export default function GradingConsole() {
                         title="Delete Submission"
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                     >
-                    {/* Trash Icon SVG */}
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -259,46 +268,64 @@ export default function GradingConsole() {
             
             {/* --- HEADER --- */}
             <div className="flex justify-between items-end border-b pb-6">
-            <div>
+              <div>
                 <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                {selectedData.attempt.student?.student_name || "Unknown"}
+                  {selectedData.attempt.student?.student_name || "Unknown"}
                 </h1>
-                <div className="flex items-center gap-3 text-sm text-gray-500 mt-2">
-                {/* ... existing ID badges ... */}
+                <div className="flex flex-col gap-1 text-sm text-gray-500 mt-2">
+                   {/* --- UPDATED: Date AND Time --- */}
+                   <div className="flex items-center gap-2">
+                     <span>📅 Submitted: </span>
+                     <span className="font-medium text-gray-900">
+                       {new Date(selectedData.attempt.submitted_at).toLocaleDateString()} 
+                       <span className="text-gray-400 font-normal mx-1"> at </span> 
+                       {new Date(selectedData.attempt.submitted_at).toLocaleTimeString()}
+                     </span>
+                   </div>
+                   {/* ----------------------------- */}
                 </div>
-            </div>
+              </div>
 
-            <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-col items-end gap-2">
+                
+                {/* TIME TAKEN DISPLAY */}
+                <div className="text-xs text-gray-500 font-medium flex items-center gap-1 mb-1">
+                  <span>⏱️ Time Taken: </span>
+                  <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 font-mono">
+                    {durationString}
+                  </span>
+                </div>
+
                 {/* SCORE DISPLAY */}
                 <div>
-                <span className="block text-xs text-gray-500 uppercase font-bold tracking-wider text-right">Total Score</span>
-                <span className="text-4xl font-extrabold text-blue-600">
-                    {Number(selectedData.attempt.grade).toFixed(1)} 
-                    <span className="text-xl text-gray-300 font-medium"> / {quiz?.grade}</span>
-                </span>
+                  <span className="block text-xs text-gray-500 uppercase font-bold tracking-wider text-right">Total Score: </span>
+                  <span className="text-4xl font-extrabold text-blue-600">
+                      {Number(selectedData.attempt.grade).toFixed(1)} 
+                      <span className="text-xl text-gray-300 font-medium"> / {quiz?.grade}</span>
+                  </span>
                 </div>
 
-                {/* --- NEW DELETE BUTTON --- */}
                 <Form 
-                method="post" 
-                onSubmit={(event) => {
-                    if (!confirm("Are you sure you want to PERMANENTLY delete this student's submission? This cannot be undone.")) {
-                    event.preventDefault();
-                    }
-                }}
+                  method="post" 
+                  onSubmit={(event) => {
+                      if (!confirm("Are you sure you want to PERMANENTLY delete this student's submission? This cannot be undone.")) {
+                        event.preventDefault();
+                      }
+                  }}
                 >
-                <input type="hidden" name="attemptId" value={selectedData.attempt.attempt_id} />
-                <button 
-                    type="submit" 
-                    name="intent" 
-                    value="delete"
-                    className="text-xs text-red-500 hover:text-red-700 hover:underline font-semibold mt-1"
-                >
-                    🗑 Delete Submission
-                </button>
+                  <input type="hidden" name="attemptId" value={selectedData.attempt.attempt_id} />
+                  <button 
+                      type="submit" 
+                      name="intent" 
+                      value="delete"
+                      className="text-xs text-red-500 hover:text-red-700 hover:underline font-semibold mt-1"
+                  >
+                      🗑 Delete Submission
+                  </button>
                 </Form>
+              </div>
             </div>
-            </div>
+            
             {/* --- QUESTIONS LOOP --- */}
             {selectedData.questions.map((q: any, index: number) => {
               const savedQ = selectedData.savedAnswers.find((s: any) => s.question_id === q.question_id);
@@ -321,7 +348,19 @@ export default function GradingConsole() {
                   </div>
                   
                   {/* Question Content */}
-                  <div className="prose prose-sm text-gray-800 mb-6 max-w-none" dangerouslySetInnerHTML={{ __html: q.html_content }} />
+                  <div className="prose prose-sm text-gray-800 mb-4 max-w-none" dangerouslySetInnerHTML={{ __html: q.html_content }} />
+
+                  {/* --- NEW: IMAGE DISPLAY --- */}
+                  {q.image_url && (
+                    <div className="mb-6">
+                      <img 
+                        src={q.image_url} 
+                        alt={`Question ${index + 1} Reference`}
+                        className="max-w-full h-auto max-h-[400px] rounded-lg border border-gray-200 shadow-sm object-contain bg-white"
+                      />
+                    </div>
+                  )}
+                  {/* ------------------------- */}
 
                   {/* Student Answer Area */}
                   <div className="bg-gray-50 p-5 rounded-lg border border-gray-100 mb-6">

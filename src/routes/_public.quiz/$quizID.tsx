@@ -7,14 +7,13 @@ import { getQuizById, getStudentAttempts, createAttempt, submitQuizAttempt} from
 const ClientEditor = lazy(() => import("~/components/common/Editor.client"));
 
 // 1. HARDCODED ID FOR PHASE 1 TESTING
-// Later, this will come from your Auth session
 const TEST_STUDENT_ID = "ST006";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const quizId = Number(params.quizID);
   const formData = await request.formData();
   
-  // 1. Check if this is a "Submit Answers" request (Phase 4 Logic)
+  // 1. Check if this is a "Submit Answers" request
   const answersJson = formData.get("answers");
 
   if (answersJson) {
@@ -41,7 +40,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (quiz.open_time) {
     const openTime = new Date(quiz.open_time);
     if (now < openTime) {
-      // Reject the request if too early
       return json({ error: "Quiz has not started yet" }, { status: 403 });
     }
   }
@@ -49,17 +47,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   // 3. DEADLINE ENFORCEMENT
   if (quiz.deadline) {
     const deadlineDate = new Date(quiz.deadline);
-
     if (now > deadlineDate) {
-      // STOP! Do not create an attempt.
-      // Returning here triggers the Loader to re-run.
-      // The Loader will see it's overdue and render the "Orange Box" instead of the questions.
       return json({ error: "Quiz is overdue" }, { status: 403 });
     }
   }
 
-  // 4. ATTEMPT LIMIT ENFORCEMENT (Optional but Recommended)
-  // You can also check if attempts.length >= quiz.attempt_limit here for extra safety
+  // 4. ATTEMPT LIMIT ENFORCEMENT (Optional check here)
 
   // 5. If safe, PROCEED to create attempt
   await createAttempt(quizId, TEST_STUDENT_ID);
@@ -79,24 +72,40 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   // 2. Check for ACTIVE attempt (Resume logic)
   const activeAttempt = attempts?.find((a) => a.submitted_at === null);
   
-  // 3. Timer logic
+  // --- NEW LOGIC: Calculate Deadline & Effective Time ---
+  const deadlineTime = quiz.deadline ? new Date(quiz.deadline).getTime() : 8640000000000; // Far future if null
+  const now = Date.now();
+
+  // 3. Timer logic for ACTIVE Attempt (Resume)
   let expireTime = null;
   
-  if (activeAttempt && quiz.time_limit && quiz.time_limit > 0) {
+  if (activeAttempt) {
     const startTime = new Date(activeAttempt.started_at).getTime();
     
-    // FIX: Database is in SECONDS, so just * 1000 for Milliseconds
-    const limitInMs = quiz.time_limit * 1000; 
-    
-    expireTime = startTime + limitInMs;
+    // Standard duration (if 0/null, treat as infinite/deadline only)
+    const limitInMs = (quiz.time_limit || 999999) * 1000; 
+    const theoreticalExpire = startTime + limitInMs;
+
+    // RULE: Expire at duration OR deadline, whichever is FIRST
+    expireTime = Math.min(theoreticalExpire, deadlineTime);
   }
+
+  // 4. Preview Logic for NEW Attempt (Start Screen)
+  // How much time will they get if they click start NOW?
+  const secondsToDeadline = Math.max(0, (deadlineTime - now) / 1000);
+  
+  const effectiveTimeLimit = quiz.time_limit 
+    ? Math.min(quiz.time_limit, secondsToDeadline)
+    : secondsToDeadline;
 
   // Return everything needed for the Dashboard
   return json({ 
     quiz, 
-    attempt: activeAttempt || null, // If active, we resume. If null, we show Start Screen.
-    pastAttempts: attempts || [],    // Send history to the frontend
-    expireTime // <--- PASS THIS TO FRONTEND
+    attempt: activeAttempt || null, 
+    pastAttempts: attempts || [],    
+    expireTime,          // For the active timer
+    effectiveTimeLimit,  // For the start screen preview
+    serverTime: now
   });
 };
 
@@ -108,7 +117,7 @@ function QuizTimer({ expireTime, onTimeUp }: { expireTime: number | null, onTime
     if (!expireTime) return;
 
     const interval = setInterval(() => {
-      const now = Date.now();
+      const now = Date.now(); // Note: Ideally sync with serverTime, but Date.now() is usually close enough
       const diff = expireTime - now;
 
       if (diff <= 0) {
@@ -116,23 +125,17 @@ function QuizTimer({ expireTime, onTimeUp }: { expireTime: number | null, onTime
         setTimeLeft("00:00:00");
         onTimeUp(); 
       } else {
-        // Calculate Time Components
         const totalSeconds = Math.floor(diff / 1000);
         const d = Math.floor(totalSeconds / (3600 * 24));
         const h = Math.floor((totalSeconds % (3600 * 24)) / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60);
         const s = totalSeconds % 60;
 
-        // Format: HH:MM:SS (Always 2 digits)
         const timeChunk = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        
-        // Add "1d " prefix only if days > 0
         const finalString = d > 0 ? `${d}d ${timeChunk}` : timeChunk;
 
         setTimeLeft(finalString);
-        
-        // Urgent if less than 5 minutes (300,000ms) remaining
-        if (diff < 300000) setIsUrgent(true);
+        if (diff < 300000) setIsUrgent(true); // Red alert if < 5 mins
       }
     }, 1000);
 
@@ -152,13 +155,13 @@ function QuizTimer({ expireTime, onTimeUp }: { expireTime: number | null, onTime
 
 export default function QuizIdPage() {
   const submit = useSubmit();
-  // 1. GET EXPIRE TIME FROM LOADER
-  const { quiz, attempt, pastAttempts, expireTime } = useLoaderData<typeof loader>();
+  // Get effectiveTimeLimit from loader
+  const { quiz, attempt, pastAttempts, expireTime, effectiveTimeLimit } = useLoaderData<typeof loader>();
   
   const [selections, setSelections] = useState<Record<number, number | string>>({});
   const [isClient, setIsClient] = useState(false);
 
-  // 2. AUTOSAVE: Load Draft on Mount
+  // Autosave: Load
   useEffect(() => {
     setIsClient(true);
     if (attempt) {
@@ -167,7 +170,6 @@ export default function QuizIdPage() {
       if (savedData) {
         try {
           setSelections(JSON.parse(savedData));
-          console.log("Restored draft from LocalStorage");
         } catch (e) {
           console.error("Failed to parse draft");
         }
@@ -175,12 +177,10 @@ export default function QuizIdPage() {
     }
   }, [attempt]);
 
-  // 3. AUTOSAVE: Save on Change
+  // Autosave: Save
   const handleAnswerChange = (questionId: number, val: number | string) => {
     setSelections((prev) => {
       const next = { ...prev, [questionId]: val };
-      
-      // Save to LocalStorage immediately
       if (attempt) {
         localStorage.setItem(`quiz_draft_${attempt.attempt_id}`, JSON.stringify(next));
       }
@@ -188,27 +188,33 @@ export default function QuizIdPage() {
     });
   };
 
-  // 4. SHARED SUBMIT FUNCTION (Used by Button AND Timer)
   const finalSubmit = () => {
-    // Clear the draft so next attempt starts fresh
-    if (attempt) {
-      localStorage.removeItem(`quiz_draft_${attempt.attempt_id}`);
-    }
-
+    if (attempt) localStorage.removeItem(`quiz_draft_${attempt.attempt_id}`);
     const formData = new FormData();
-    // We must use the *current* selections state. 
-    // Since this function closes over 'selections', it works fine for the button.
-    // For the timer, we might need a ref if using useCallback, but here standard closure is okay 
-    // because the component re-renders on every selection change anyway.
     formData.append("answers", JSON.stringify(selections));
-    
-    // Add a flag so the server knows it was auto-submitted (optional but good for logs)
-    // formData.append("intent", "submit"); 
-    
     submit(formData, { method: "post" });
   };
 
-  // --- VIEW 1: THE QUIZ DASHBOARD ---
+  // Helper to format seconds nicely
+  const formatTimeLimit = (seconds: number) => {
+    if (!seconds) return "None";
+    if (seconds > 31536000) return "Unlimited"; // Simple check for huge numbers
+    
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+
+    const parts = [];
+    if (d > 0) parts.push(`${d}d`);
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}m`);
+    if (s > 0) parts.push(`${s}s`);
+
+    return parts.join(' ') || "0s";
+  };
+
+// --- VIEW 1: THE QUIZ DASHBOARD (START SCREEN) ---
   if (!attempt) {
     const attemptCount = pastAttempts.length;
     const maxAttempts = quiz.attempt_limit || 0;
@@ -218,71 +224,59 @@ export default function QuizIdPage() {
     const isUpcoming = openTime ? now < openTime : false;
     const isOverdue = deadline ? now > deadline : false;
     const isLimitReached = maxAttempts > 0 && attemptCount >= maxAttempts;
-
-      const formatTimeLimit = (seconds: number) => {
-    if (!seconds) return "None";
     
-    const d = Math.floor(seconds / (3600 * 24));
-    const h = Math.floor((seconds % (3600 * 24)) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-
-    const parts = [];
-    if (d > 0) parts.push(`${d} day${d > 1 ? 's' : ''}`);
-    if (h > 0) parts.push(`${h} hr${h > 1 ? 's' : ''}`);
-    if (m > 0) parts.push(`${m} min${m > 1 ? 's' : ''}`);
-    if (s > 0) parts.push(`${s} sec${s > 1 ? 's' : ''}`);
-
-    return parts.join(' ') || "0 secs";
-  };
-
     return (
       <div className="max-w-4xl mx-auto p-8 space-y-12">
         <div className="bg-white rounded-xl shadow-sm border p-8 text-center space-y-6">
           <h1 className="text-3xl font-bold text-gray-900">{quiz.title}</h1>
-          <p className="text-gray-600 text-lg">{quiz.description}</p>
-          <div className="flex justify-center space-x-6">
-            <div className="text-center">
-              <span className="text-sm text-gray-500 uppercase tracking-wide block mb-1">Open time: </span>
-              <span className="text-2xl font-bold text-gray-900 block">
-                {openTime ? openTime.toLocaleString() : "Unsetted"}
-              </span>
-              </div>
-          </div>
-          <div className="grid grid-cols-3 gap-8 py-6 border-t border-b border-gray-100 my-6">
-            <div className="text-center">
-              <span className="text-sm text-gray-500 uppercase tracking-wide block mb-1">Deadline: </span>
-              <span className={`text-2xl font-bold ${isOverdue ? "text-red-600" : "text-gray-900"}`}>
-                {deadline ? deadline.toLocaleString() : "None"}
-              </span>
+          
+          {/* Conditional Description Display */}
+          {quiz.display_description && quiz.description && (
+            <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg text-blue-900 text-left max-w-2xl mx-auto">
+                <p className="whitespace-pre-wrap">{quiz.description}</p>
             </div>
-            <div className="text-center border-l border-r border-gray-100">
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-6 border-t border-b border-gray-100 my-6">
+            
+            {/* 1. Open/Close Time */}
+            <div className="text-center md:border-r border-gray-100">
+              <span className="text-sm text-gray-500 uppercase tracking-wide block mb-1">Schedule</span>
+              <div className="text-sm">
+                <p><span className="text-gray-500">Opens:</span> {openTime ? openTime.toLocaleString() : "Now"}</p>
+                <p className={`${isOverdue ? "text-red-600 font-bold" : ""}`}>
+                  <span className="text-gray-500">Closes:</span> {deadline ? deadline.toLocaleString() : "Never"}
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Attempts */}
+            <div className="text-center md:border-r border-gray-100">
                <span className="text-sm text-gray-500 uppercase tracking-wide block mb-1">Attempts: </span>
                <span className={`text-2xl font-bold ${isLimitReached ? "text-red-600" : "text-gray-900"}`}>
-                 {attemptCount} <span className="text-gray-400">/ {maxAttempts || "∞"}</span>
+                 {attemptCount} <span className="text-gray-400 text-lg">/ {maxAttempts || "∞"}</span>
                </span>
             </div>
+
+            {/* 3. Time Limit (FIXED: Showing Initial/Standard Limit) */}
             <div className="text-center">
-                <div className="text-center">
-                  <span className="text-sm text-gray-500 uppercase tracking-wide block mb-1">Time Limit: </span>
-                  <span className="text-2xl font-bold text-gray-900 block">
-                    {/* Use the new helper */}
-                    {formatTimeLimit(quiz.time_limit || 0)}
-                  </span>
-                </div>
+                <span className="text-sm text-gray-500 uppercase tracking-wide block mb-1">Time Limit: </span>
+                <span className="text-2xl font-bold text-gray-900 block">
+                  {/* Using quiz.time_limit directly instead of effectiveTimeLimit */}
+                  {formatTimeLimit(quiz.time_limit || 0)}
+                </span>
             </div>
           </div>
 
           <div className="flex justify-center">
             {isUpcoming ? (
-            // PRIORITY 1: NOT OPEN YET (New)
             <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-lg p-5 flex flex-col items-center justify-center gap-2 text-gray-600">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🔒</span>
                 <span className="font-bold text-lg">Quiz is locked</span>
               </div>
               <p className="text-sm">
-                This quiz will open on <span className="font-semibold text-gray-900">{openTime?.toLocaleString()}</span>
+                Opens on <span className="font-semibold text-gray-900">{openTime?.toLocaleString()}</span>
               </p>
             </div>
 
@@ -305,6 +299,7 @@ export default function QuizIdPage() {
           </div>
         </div>
 
+        {/* Previous Attempts Table */}
         {pastAttempts.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-900">Previous Attempts</h2>
@@ -316,52 +311,24 @@ export default function QuizIdPage() {
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Date</th>
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right">Grade</th>
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {pastAttempts.map((past, index) => {
-                    // 1. Calculate Attempt Number (Newest = Highest Number)
                     const attemptNum = pastAttempts.length - index; 
                     const score = past.grade || 0;
                     const isPass = (score / (quiz.grade || 10)) >= 0.5;
 
                     return (
                       <tr key={past.attempt_id} className="hover:bg-gray-50 transition-colors">
-                        
-                        {/* 1. Attempt Number */}
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          #{attemptNum}
-                        </td>
-
-                        {/* 2. Date + Time */}
+                        <td className="px-6 py-4 font-medium text-gray-900">#{attemptNum}</td>
                         <td className="px-6 py-4 text-gray-600 text-sm">
-                          {past.submitted_at ? (
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-900">
-                                {new Date(past.submitted_at).toLocaleDateString("en-US", {
-                                  year: 'numeric', month: 'short', day: 'numeric'
-                                })}
-                              </span>
-                              <span className="text-xs text-gray-500"> </span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(past.submitted_at).toLocaleTimeString("en-US", {
-                                  hour: '2-digit', minute: '2-digit'
-                                })}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="italic text-blue-600">In Progress...</span>
-                          )}
+                          {past.submitted_at ? new Date(past.submitted_at).toLocaleDateString() : <span className="italic text-blue-600">In Progress</span>}
                         </td>
-
-                        {/* 3. Grade */}
                         <td className="px-6 py-4 text-right font-mono">
-                          {past.submitted_at ? (
-                            <span>{Number(score).toFixed(1)} <span className="text-gray-400">/ {quiz.grade || 10}</span></span>
-                          ) : "-"}
+                          {past.submitted_at ? <span>{Number(score).toFixed(1)} <span className="text-gray-400">/ {quiz.grade || 10}</span></span> : "-"}
                         </td>
-
-                        {/* 4. Status */}
                         <td className="px-6 py-4 text-center">
                           {past.submitted_at ? (
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${isPass ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
@@ -371,26 +338,13 @@ export default function QuizIdPage() {
                             <span className="bg-yellow-100 text-yellow-800 px-2.5 py-0.5 rounded-full text-xs font-medium">Ongoing</span>
                           )}
                         </td>
-
-                        {/* 5. ACTIONS COLUMN (ADD THIS PART) */}
                         <td className="px-6 py-4 text-right text-sm">
                           {past.submitted_at ? (
-                            <Link 
-                              to={`/quiz/${quiz.quiz_id}/review/${past.attempt_id}`}
-                              className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
-                            >
-                              Review
-                            </Link>
+                            <Link to={`/quiz/${quiz.quiz_id}/review/${past.attempt_id}`} className="text-blue-600 hover:underline">Review</Link>
                           ) : (
-                            <Link 
-                              to={`/quiz/${quiz.quiz_id}`} 
-                              className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
-                            >
-                              Continue
-                            </Link>
+                            <Link to={`/quiz/${quiz.quiz_id}`} className="text-blue-600 hover:underline">Continue</Link>
                           )}
                         </td>
-
                       </tr>
                     );
                   })}
@@ -405,17 +359,26 @@ export default function QuizIdPage() {
 
   // --- VIEW 2: THE ACTIVE QUIZ ---
   return (
-    <div className="max-w-3xl mx-auto p-6 pb-32"> {/* Added pb-32 to make room for sticky footer & timer */}
+    <div className="max-w-3xl mx-auto p-6 pb-32"> 
       
       {/* Header Badge */}
-      <div className="flex justify-between items-center mb-8 border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">{quiz.title}</h1>
-        <div className="flex items-center gap-3">
-            <span className="text-gray-500 text-sm">Attempt #{attempt.attempt_id}</span>
-            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
-            ● In Progress
-            </span>
+      <div className="flex flex-col gap-4 mb-8 border-b pb-4">
+        <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-900">{quiz.title}</h1>
+            <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-sm">Attempt #{attempt.attempt_id}</span>
+                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                ● In Progress
+                </span>
+            </div>
         </div>
+
+        {/* --- LOGIC: Show Description in Active Mode too (Optional) --- */}
+        {quiz.display_description && quiz.description && (
+             <div className="bg-gray-50 p-3 rounded text-sm text-gray-600 border border-gray-200">
+                {quiz.description}
+             </div>
+        )}
       </div>
       
       <div className="space-y-12">
@@ -424,15 +387,37 @@ export default function QuizIdPage() {
 
           return (
             <div key={q.question_id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+              
+              {/* --- MODIFIED SECTION START --- */}
               <div className="flex gap-4 mb-6">
-                <span className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-sm">
+                {/* 1. Question Number Bubble */}
+                <span className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-sm h-fit mt-1">
                   {index + 1}
                 </span>
-                <div 
-                  className="prose text-gray-800 text-lg"
-                  dangerouslySetInnerHTML={{ __html: q.html_content }} 
-                />
+                
+                {/* 2. Content Wrapper (Text + Image) */}
+                <div className="w-full space-y-4">
+                  
+                  {/* A. Question Text */}
+                  <div 
+                    className="prose text-gray-800 text-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: q.html_content }} 
+                  />
+
+                  {/* B. Question Image (New) */}
+                  {q.image_url && (
+                    <div className="mt-3">
+                      <img 
+                        src={q.image_url} 
+                        alt={`Question ${index + 1} Reference`}
+                        className="max-w-full h-auto max-h-[500px] rounded-lg border border-gray-200 shadow-sm object-contain"
+                        loading="lazy" 
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+              {/* --- MODIFIED SECTION END --- */}
               
               <div className="ml-12">
                 {isEssay ? (
@@ -484,10 +469,8 @@ export default function QuizIdPage() {
         })}
       </div>
       
-      {/* 5. ADD TIMER COMPONENT HERE */}
       <QuizTimer expireTime={expireTime} onTimeUp={finalSubmit} />
 
-      {/* Submit Button */}
       <div className="mt-12 pt-6 border-t border-gray-200 sticky bottom-0 bg-gray-50 p-4 -mx-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
          <button 
            onClick={finalSubmit}

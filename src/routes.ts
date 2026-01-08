@@ -27,6 +27,14 @@ export default [
         path: "courses/:courseID/create_post", 
         file: "src/routes/_public.course/create_post.tsx" 
       },
+      {
+        path: "courses/:courseID/create_quiz",
+        file: "src/routes/_auth/teaching/$courseID/create_quiz.tsx"
+      },
+      {
+        path: "courses/:courseID/create_quiz_multiplechoice1",
+        file: "src/routes/_auth/teaching/$courseID/create_quiz_multiplechoice1.tsx"
+      },
       { path: "post", file: "src/routes/_public.post.tsx" },
       { 
         path: "post/:postID", 
@@ -51,6 +59,10 @@ export default [
       {
         path: "quiz/:quizID/grading",
         file: "src/routes/_auth/teaching/quiz/$quizID/grading.tsx"
+      },
+      {
+        path: "quiz/:quizID/edit",
+        file: "src/routes/_auth/teaching/quiz/$quizID/edit.tsx"
       },
       { path: "threads", file: "src/routes/_public.threads.tsx" },
       {

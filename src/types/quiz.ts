@@ -13,6 +13,7 @@ export type Question = {
   display_order: number;
   is_multiple_choice: boolean;
   choice_multiple_question: Choice[]; 
+  image_url: string | null;
 };
 
 export type Quiz = {
@@ -25,6 +26,7 @@ export type Quiz = {
   question: Question[];
   open_time: string | null;
   deadline: string | null;
+  display_description: boolean;
 };
 
 // Add this new type for the Student's Record

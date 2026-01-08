@@ -222,3 +222,19 @@ export async function getSectionById(sectionId: string) {
   //   description: "Mô tả chi tiết...",
   // };
 }
+
+export async function getSectionWithCourseDetails(sectionId: string) {
+  const { data, error } = await supabase
+    .from('section')
+    .select(`
+      *,
+      course: course_id (
+        course_name
+      )
+    `)
+    .eq('section_id', sectionId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
