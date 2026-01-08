@@ -19,13 +19,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // Public layout should NOT require authentication - only provide user data if available
   // Individual routes (like course pages) will handle their own authentication requirements
   const userId = await getUserId(request);
-  
+
   if (!userId) {
     return { user: null };
   }
 
   const user = await getUserById(userId);
-  
+
   return { user: user || null };
 }
 

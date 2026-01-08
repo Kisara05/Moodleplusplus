@@ -1,10 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import {
-  useLoaderData,
-  useNavigate,
-  useSearchParams,
-} from "@remix-run/react";
+import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useState } from "react";
 
 import { getSectionList } from "~/services/course.server";
@@ -28,7 +24,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return redirect("/login");
   }
 
-  const courses = await getSectionList();
+  const courses = await getSectionList(userId);
 
   // Flatten backend response
   const flatSections = courses.map((item: any) => ({
@@ -65,8 +61,7 @@ export default function CoursesList() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [currentLanguage, setCurrentLanguage] =
-    useState<"en" | "vi">(language);
+  const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
   const [searchQuery, setSearchQuery] = useState("");
 
   /* =========================
@@ -144,7 +139,7 @@ export default function CoursesList() {
     cursor: "pointer",
   };
 
-    const courseNameStyle: React.CSSProperties = {
+  const courseNameStyle: React.CSSProperties = {
     fontSize: "1.1rem",
     fontWeight: "bold",
     color: "#000000",
@@ -177,9 +172,7 @@ export default function CoursesList() {
           <input
             type="text"
             placeholder={
-              currentLanguage === "en"
-                ? "Search course"
-                : "Tìm kiếm khóa học"
+              currentLanguage === "en" ? "Search course" : "Tìm kiếm khóa học"
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -190,33 +183,32 @@ export default function CoursesList() {
 
         <div style={sectionStyle}>
           <h2 style={sectionTitleStyle}>
-            {currentLanguage === "en"
-              ? "All courses"
-              : "Tất cả khóa học"}
+            {currentLanguage === "en" ? "All courses" : "Tất cả khóa học"}
           </h2>
 
           {courses.map((course) => (
-              <div
-                key={course.section_id}
-                style={courseCardStyle}
-                onClick={() => handleCourseClick(course.section_id)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <div style={courseNameStyle}>{course.course_name}</div>
-                {course.teachers.map((teacher, index) => (
-                  <div key={index} style={teacherStyle}>
-                    Teacher: {teacher}
-                  </div>
-                ))}
-              </div>
-            ))}
+            <div
+              key={course.section_id}
+              style={courseCardStyle}
+              onClick={() => handleCourseClick(course.section_id)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow =
+                  "0 4px 12px rgba(0, 0, 0, 0.15)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div style={courseNameStyle}>{course.course_name}</div>
+              {course.teachers.map((teacher, index) => (
+                <div key={index} style={teacherStyle}>
+                  Teacher: {teacher}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
 
         <div style={sectionStyle}>

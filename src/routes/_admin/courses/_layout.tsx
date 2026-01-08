@@ -35,9 +35,15 @@ export default function CoursesList() {
     <div>
       <h2>Danh sách khóa học</h2>
       <ul>
-        {courses.map((course) => (
-          <li key={course.section_id}>
-            <Link to={`/courses/${course.section_id}`}>{course.course_name}</Link>
+        {courses.map((section) => (
+          <li key={section.section_id}>
+            {section.course.map((course) => (
+              <div key={course.course_id}>
+                <Link to={`/courses/${section.section_id}`}>
+                  {course.course_name}
+                </Link>
+              </div>
+            ))}
           </li>
         ))}
       </ul>

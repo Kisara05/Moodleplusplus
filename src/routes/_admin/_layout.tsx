@@ -1,5 +1,5 @@
 import { Outlet, Link, redirect, useLoaderData, Form } from "@remix-run/react";
-import type { LoaderFunctionArgs } from "react-router";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { getUserById } from "~/services/auth/auth.server";
 import { requireUserId } from "~/services/auth/session.server";
 import type { AuthUser } from "~/types/models/user";

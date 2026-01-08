@@ -32,16 +32,17 @@ export async function login(data: LoginData): Promise<AuthResult> {
     if (signInError || !authData.user) {
       return { error: "Email hoặc mật khẩu không chính xác" };
     }
-    
+
     console.log("Auth data:", authData.user.id);
 
-    const { data: profile, error: Error } = await supabaseServer
-      .from("users")
-      .select("id, email, full_name, role")
+    // const { data: profile, error: Error } = await supabaseServer
+    //   .from("users")
+    //   .select("id, email, full_name, role")
 
-    if (Error) {
-    }
-    else console.log("Profile data:", profile);
+    // if (Error) {
+
+    // }
+    // else console.log("Profile data:", profile);
 
     // 2. Lấy thêm thông tin User (role, full_name) từ bảng public.users của bạn
     const { data: userProfile, error: profileError } = await supabaseServer

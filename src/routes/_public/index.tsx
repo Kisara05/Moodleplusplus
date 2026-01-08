@@ -29,12 +29,12 @@ export default function HomePage() {
           >
             Browse Courses
           </Link>
-          <Link
+          {/* <Link
             to="/register"
             className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg text-lg font-semibold hover:bg-blue-50"
           >
             Get Started
-          </Link>
+          </Link> */}
         </div>
       </div>
 

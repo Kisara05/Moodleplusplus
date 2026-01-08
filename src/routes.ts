@@ -10,13 +10,21 @@ export const routesConfig = {
       { path: "", file: "routes/_public/index.tsx", index: true },
       { path: "login", file: "routes/_public/login/login.tsx" },
       { path: "courses", file: "routes/_public/course/index.tsx" },
-      { path: "courses/:courseID", file: "routes/_public/course/$courseID.tsx" },
+      {
+        path: "forget-password",
+        file: "routes/_public/login/pass-forgot.tsx",
+      },
+      { path: "email-auth", file: "routes/_public/login/auth-email.tsx" },
+      {
+        path: "courses/:courseID",
+        file: "routes/_public/course/$courseID.tsx",
+      },
       { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
       { path: "logout", file: "routes/_public/login/logout.tsx" },
       {
         path: "threads/:threadID",
         file: "routes/_public/threads/$threadID.tsx",
-      }
+      },
     ],
   },
 
@@ -25,7 +33,7 @@ export const routesConfig = {
     layout: "routes/_auth/_layout.tsx",
     routes: [
       { path: "dashboard", file: "routes/_auth/dashboard.tsx" },
-      { path: "my-courses", file: "routes/_auth/courses/index.tsx" },
+      { path: "courses", file: "routes/_auth/courses/index.tsx" },
       {
         path: "courses/:courseID",
         file: "routes/_auth/courses/$courseID/index.tsx",
@@ -37,7 +45,7 @@ export const routesConfig = {
       {
         path: "threads/:threadID",
         file: "routes/_auth/threads/$threadID.tsx",
-      }
+      },
     ],
   },
 
@@ -63,7 +71,7 @@ export const routesConfig = {
       {
         path: "threads/:threadID",
         file: "routes/_admin/threads/$threadID.tsx",
-      }
+      },
     ],
   },
 };

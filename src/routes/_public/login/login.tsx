@@ -1,11 +1,16 @@
-import { Form, useActionData, useNavigate, useLoaderData } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useNavigate,
+  useLoaderData,
+} from "@remix-run/react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Header } from "~/components/layout/header";
 import { Footer } from "~/components/layout/footer";
 import { useState } from "react";
 
-// 🔐 Backend imports (from friend's code)
+// 🔐 Backend imports
 import { login } from "~/services/auth/auth.server";
 import { createUserSession, getUserId } from "~/services/auth/session.server";
 
@@ -37,7 +42,9 @@ export async function action({ request }: ActionFunctionArgs) {
   // Validation
   if (typeof email !== "string" || typeof password !== "string") {
     return json(
-      { error: language === "en" ? "Invalid form data" : "Dữ liệu không hợp lệ" },
+      {
+        error: language === "en" ? "Invalid form data" : "Dữ liệu không hợp lệ",
+      },
       { status: 400 }
     );
   }
@@ -166,7 +173,11 @@ export default function Login() {
 
   return (
     <div style={containerStyle}>
-      <Header signed_in={false} language={currentLanguage} onLanguageChange={toggleLanguage} />
+      <Header
+        signed_in={false}
+        language={currentLanguage}
+        onLanguageChange={toggleLanguage}
+      />
       <main style={mainStyle}>
         <div style={cardStyle}>
           <h1 style={titleStyle}>Moodle++</h1>
@@ -199,7 +210,9 @@ export default function Login() {
                 {currentLanguage === "en" ? "Log in" : "Đăng nhập"}
               </button>
               <a href="/forget-password" style={linkStyle}>
-                {currentLanguage === "en" ? "Forget password?" : "Quên mật khẩu?"}
+                {currentLanguage === "en"
+                  ? "Forget password?"
+                  : "Quên mật khẩu?"}
               </a>
             </div>
           </Form>
