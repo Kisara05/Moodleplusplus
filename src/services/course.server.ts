@@ -1,24 +1,86 @@
+import { get } from "http";
 import { supabase } from "./supabase.server";
+import { getRoleandID } from "./user/user.server";
 
 // File này sẽ chứa logic backend (CRUD) cho Khóa học
 
-export async function getSectionList() {
-  const { data, error } = await supabase
-    .from('section')        // 1. FROM section
+export async function getAllSections() {
+  const { data, error: course_error } = await supabase
+    .from('section')              // 1. Start from Section
     .select(`
       section_id,
-      course_id,
+      open_for_reg,
       course (
-        course_name
+        course_name,
+        course_id
       )
-    `);
-  if (error) throw error;
+    `)
+    .order('course_id', { ascending: true }); // 4. Filter IDs
+  if (course_error) throw course_error;
+  console.log(data);
   return data;
+}
+
+export async function getSectionList(user_id: string) {
+  const { role, id } = await getRoleandID(user_id);
+  console.log(role, id);
+  if (role === 'student') {
+    const list = await student_getSectionList(id);
+    return getCoursesById(list.map((item: any) => item.section_id));
+  }
+  if (role === 'teacher') {
+    const list = await instructor_getSectionList(id);
+    return getCoursesById(list.map((item: any) => item.section_id));
+  }
+  if (role === 'admin') 
+  {
+    return getAllSections();
+  }
+  return [];
   // console.log("Course Service: Getting course list");
   // return [
   //   { id: "1", title: "Lập trình Web 101" },
   //   { id: "2", title: "Cơ sở dữ liệu 102" },
   // ];
+}
+
+export async function student_getSectionList(studentId: string) {
+  console.log("Course Service: Getting section list for student", studentId);
+  const { data, error } = await supabase
+    .from('gradereport')        // 1. FROM student_section
+    .select('section_id')
+    .eq('student_id', studentId);
+  if (error) throw error;
+  return data;
+}
+
+export async function instructor_getSectionList(instructorID: string) {
+  console.log("Course Service: Getting section list for instructor", instructorID);
+  const { data, error } = await supabase
+    .from('teaching')        // 1. FROM section
+    .select('section_id')
+    .eq('instructor_id', instructorID);
+  if (error) throw error;
+  return data;
+}
+
+export async function getCoursesById(sectionIds: string[]) {
+  console.log("Course Service: Getting courses by IDs", sectionIds);
+  const { data, error } = await supabase
+    .from('section')              // 1. Start from Section
+    .select(`
+      section_id,
+      course (
+        course_name,
+        course_id
+      )
+    `)
+  .in('section_id', sectionIds); // 4. Filter IDs
+  console.log(data);
+  if (error) throw error;
+
+  
+  return data;
 }
 
 export async function getCourseById(courseId: string) {
@@ -31,12 +93,6 @@ export async function getCourseById(courseId: string) {
   // console.log(data);
   if (error) throw error;
   return data;
-  
-  return {
-    id: courseId,
-    title: "Software Engineering",
-    description: "Mô tả chi tiết...",
-  };
 }
 
 export async function getSectionById(sectionId: string) {
@@ -57,213 +113,16 @@ export async function getSectionById(sectionId: string) {
   // };
 }
 
-// Get registered courses for a student
-export async function getRegisteredCourses(userId: string) {
-  console.log("Course Service: Getting registered courses for user", userId);
-  try {
-    const { data, error } = await supabase
-      .from('enrollment')
-      .select(`
-        enrollment_id,
-        section_id,
-        section (
-          section_id,
-          class_name,
-          schedule,
-          max_students,
-          current_students,
-          course (
-            course_id,
-            course_name,
-            credits
-          )
-        )
-      `)
-      .eq('student_id', userId)
-      .eq('status', 'registered');
-    
-    if (error) {
-      console.error("Error fetching registered courses:", error);
-      // Return empty array if table doesn't exist or query fails
-      return [];
-    }
-    return data || [];
-  } catch (err) {
-    console.error("Exception in getRegisteredCourses:", err);
-    return [];
-  }
-}
-
-// Get available courses (sections that student hasn't enrolled in)
-export async function getAvailableCourses(userId: string, filters?: { year?: string; semester?: string; program?: string }) {
-  console.log("Course Service: Getting available courses", userId, filters);
-  
-  try {
-    // First get enrolled section IDs
-    const { data: enrolledData } = await supabase
-      .from('enrollment')
-      .select('section_id')
-      .eq('student_id', userId)
-      .eq('status', 'registered');
-    
-    const enrolledSectionIds = enrolledData?.map(e => e.section_id) || [];
-    
-    // Get all sections, excluding enrolled ones
-    let query = supabase
-      .from('section')
-      .select(`
-        section_id,
-        class_name,
-        schedule,
-        max_students,
-        current_students,
-        course (
-          course_id,
-          course_name,
-          credits,
-          year,
-          semester,
-          program
-        )
-      `);
-    
-    // Exclude enrolled sections if any
-    if (enrolledSectionIds.length > 0) {
-      query = query.not('section_id', 'in', `(${enrolledSectionIds.join(',')})`);
-    }
-    
-    // Apply filters if provided
-    if (filters?.year) {
-      query = query.eq('course.year', filters.year);
-    }
-    if (filters?.semester) {
-      query = query.eq('course.semester', filters.semester);
-    }
-    if (filters?.program) {
-      query = query.eq('course.program', filters.program);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error("Error fetching available courses:", error);
-      return [];
-    }
-    return data || [];
-  } catch (err) {
-    console.error("Exception in getAvailableCourses:", err);
-    return [];
-  }
-}
-
-// Enroll in a course (section)
-export async function enrollInCourse(userId: string, sectionId: string) {
-  console.log("Course Service: Enrolling user", userId, "in section", sectionId);
-  
-  // Check if already enrolled
-  const { data: existing } = await supabase
-    .from('enrollment')
-    .select('enrollment_id')
-    .eq('student_id', userId)
-    .eq('section_id', sectionId)
-    .single();
-  
-  if (existing) {
-    return { success: false, error: "Already enrolled in this course" };
-  }
-  
-  // Check capacity
-  const { data: section } = await supabase
-    .from('section')
-    .select('max_students, current_students')
-    .eq('section_id', sectionId)
-    .single();
-  
-  if (section && section.current_students >= section.max_students) {
-    return { success: false, error: "Course is full" };
-  }
-  
-  // Insert enrollment
+export async function toggleActiveState(sectionId: string, newState: boolean) {
+  console.log("Course Service: Toggling active state for section", sectionId, "to", newState);
   const { data, error } = await supabase
-    .from('enrollment')
-    .insert({
-      student_id: userId,
-      section_id: sectionId,
-      status: 'registered',
-      enrolled_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-  
-  if (error) {
-    return { success: false, error: error.message };
+    .from("section")
+    .update({ open_for_reg: newState })
+    .eq("section_id", sectionId);
+  if (error)
+  {
+    console.error("Error toggling active state:", error);
+    throw error;
   }
-  
-  // Update section current_students count
-  await supabase
-    .from('section')
-    .update({ current_students: (section.current_students || 0) + 1 })
-    .eq('section_id', sectionId);
-  
-  return { success: true, data };
-}
-
-// Cancel enrollment (multiple courses)
-export async function cancelEnrollments(userId: string, sectionIds: string[]) {
-  console.log("Course Service: Canceling enrollments for user", userId, "sections", sectionIds);
-  
-  if (!sectionIds || sectionIds.length === 0) {
-    return { success: false, error: "No courses selected" };
-  }
-  
-  // Delete enrollments
-  const { error } = await supabase
-    .from('enrollment')
-    .delete()
-    .eq('student_id', userId)
-    .in('section_id', sectionIds);
-  
-  if (error) {
-    return { success: false, error: error.message };
-  }
-  
-  // Update section current_students count for each section
-  for (const sectionId of sectionIds) {
-    const { data: section } = await supabase
-      .from('section')
-      .select('current_students')
-      .eq('section_id', sectionId)
-      .single();
-    
-    if (section) {
-      await supabase
-        .from('section')
-        .update({ current_students: Math.max(0, (section.current_students || 0) - 1) })
-        .eq('section_id', sectionId);
-    }
-  }
-  
-  return { success: true };
-}
-
-// Enroll in multiple courses
-export async function enrollInCourses(userId: string, sectionIds: string[]) {
-  console.log("Course Service: Enrolling user", userId, "in sections", sectionIds);
-  
-  if (!sectionIds || sectionIds.length === 0) {
-    return { success: false, error: "No courses selected" };
-  }
-  
-  const results = [];
-  for (const sectionId of sectionIds) {
-    const result = await enrollInCourse(userId, sectionId);
-    results.push({ sectionId, ...result });
-  }
-  
-  const failed = results.filter(r => !r.success);
-  if (failed.length > 0) {
-    return { success: false, error: `Failed to enroll in ${failed.length} course(s)`, details: failed };
-  }
-  
-  return { success: true, results };
+  return data;
 }

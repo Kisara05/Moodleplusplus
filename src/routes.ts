@@ -48,9 +48,9 @@ export default [
         path: "post/:postID", 
         file: "src/routes/_public.post/$postID.tsx"
       },
-      { 
-        path: "post/:postID/edit", 
-        file: "src/routes/_public.post/edit.tsx"
+      {
+        path: "courses/:courseID/edit",
+        file: "routes/_admin/courses/$courseID.edit.tsx",
       },
       {
         path: "admin",
