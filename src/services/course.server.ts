@@ -4,8 +4,26 @@ import { getRoleandID } from "./user/user.server";
 
 // File này sẽ chứa logic backend (CRUD) cho Khóa học
 
+export async function getAllSections() {
+  const { data, error: course_error } = await supabase
+    .from('section')              // 1. Start from Section
+    .select(`
+      section_id,
+      open_for_reg,
+      course (
+        course_name,
+        course_id
+      )
+    `)
+    .order('course_id', { ascending: true }); // 4. Filter IDs
+  if (course_error) throw course_error;
+  console.log(data);
+  return data;
+}
+
 export async function getSectionList(user_id: string) {
   const { role, id } = await getRoleandID(user_id);
+  console.log(role, id);
   if (role === 'student') {
     const list = await student_getSectionList(id);
     return getCoursesById(list.map((item: any) => item.section_id));
@@ -16,14 +34,7 @@ export async function getSectionList(user_id: string) {
   }
   if (role === 'admin') 
   {
-    const { data, error } = await supabase
-      .from('section')        // 1. FROM section
-      .select(`
-        section_id
-        )
-      `);
-    if (error) throw error;
-    return getCoursesById(data.map((item: any) => item.section_id));
+    return getAllSections();
   }
   return [];
   // console.log("Course Service: Getting course list");
@@ -100,4 +111,18 @@ export async function getSectionById(sectionId: string) {
   //   title: "Software Engineering",
   //   description: "Mô tả chi tiết...",
   // };
+}
+
+export async function toggleActiveState(sectionId: string, newState: boolean) {
+  console.log("Course Service: Toggling active state for section", sectionId, "to", newState);
+  const { data, error } = await supabase
+    .from("section")
+    .update({ open_for_reg: newState })
+    .eq("section_id", sectionId);
+  if (error)
+  {
+    console.error("Error toggling active state:", error);
+    throw error;
+  }
+  return data;
 }

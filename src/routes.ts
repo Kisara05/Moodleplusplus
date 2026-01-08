@@ -2,6 +2,8 @@
  * Routes Configuration - Moodleplusplus LMS
  */
 
+import path from "path";
+
 export const routesConfig = {
   // 1. PUBLIC: Không cần đăng nhập
   public: {
@@ -37,6 +39,10 @@ export const routesConfig = {
       {
         path: "threads/:threadID",
         file: "routes/_auth/threads/$threadID.tsx",
+      },
+      {
+        path: "course-registration",
+        file: "routes/_auth/course_registration/course_registration.tsx",
       }
     ],
   },
