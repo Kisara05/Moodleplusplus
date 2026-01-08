@@ -25,13 +25,26 @@ export async function getRoleandID(userId: string) {
     return { role, id: roleData.student_id};
   }
   if (role === 'teacher') {
+    console.log("Fetching instructor ID for user:", userId);
     const { data: roleData, error: roleError } = await supabase
       .from('instructor')
       .select('instructor_id')
       .eq('userID', userId)
       .single();
-    if (roleError) throw roleError;
+    if (roleError)throw roleError;
     return { role, id: roleData.instructor_id };
   }
   return { role, id: null };
+}
+
+export async function getName(userId: string) {
+  console.log("User Service: Getting role and ID for", userId);
+  const { data, error } = await supabase
+    .from('users')
+    .select('full_name')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  console.log("Full name:", data.full_name);
+  return data.full_name;
 }

@@ -16,6 +16,7 @@ type CommentRow = {
   thread_id: number;
   content: string;
   created_at: string;
+  author: string;
 };
 
 // This is the "Nested" version we will return
@@ -23,20 +24,19 @@ export type CommentNode = CommentRow & {
   replies: CommentNode[];
 };
 
-export async function insertComment(content: string, parentId?: number, threadId?: string) {
+export async function insertComment(authorID: string, content: string, parentId: string) {
+  console.log(authorID, content, parentId);
   console.log("Inserting comment. Parent ID:", parentId, "Content:", content);
-  if (!threadId) {
-    const { data, error } = await supabase
-      .from("discussion")
-      .select("thread_id")
-      .eq("discussion_id", parentId)
-      .single();
-    if (error) {
-      console.error("Error fetching parent comment for thread ID:", error);
-      throw error;
-    }
-    threadId = data?.thread_id;
+  const { data, error } = await supabase
+    .from("discussion")
+    .select("thread_id")
+    .eq("discussion_id", parentId)
+    .single();
+  if (error) {
+    console.error("Error fetching parent comment for thread ID:", error);
+    throw error;
   }
+  const threadId = data?.thread_id;
 
   const { data: insertData, error: insertError } = await supabase
     .from("discussion")
@@ -45,6 +45,7 @@ export async function insertComment(content: string, parentId?: number, threadId
         content: content,
         reply_discussion: parentId || null,
         thread_id: threadId,
+        author: authorID
       },
     ])
     .select()
@@ -58,13 +59,19 @@ export async function insertComment(content: string, parentId?: number, threadId
 }
 
 export async function getComments(threadId: string) {
-  // A. Fetch the flat list (Efficient DB query)
-  // Note: I changed table name to 'discussion' matching your screenshot
   const { data, error } = await supabase
-    .from("discussion") 
-    .select("*")
+    .from("discussion")
+    .select(`
+      *,
+      users (
+        full_name
+      )
+    `) 
+    // ^ MAGICAL CHANGE: This tells Supabase: 
+    // "Look at the Foreign Key (author/user_id), go to the 'users' table, 
+    // and grab the 'full_name' for me right now."
     .eq("thread_id", threadId)
-    .order("created_at", { ascending: true }); // Ensures replies appear in chronological order
+    .order("created_at", { ascending: true });
 
   if (error) {
     console.error("Error fetching comments:", error);

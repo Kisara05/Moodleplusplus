@@ -5,6 +5,8 @@ import { getPostTitle } from "~/services/post.server";
 import { Form, useNavigation } from "@remix-run/react";
 import { useState } from "react";
 import { redirect } from "react-router-dom";
+import { getUserId } from "~/services/auth/session.server";
+import { getName } from "~/services/user/user.server";
 
 export async function loader({ params }: LoaderFunctionArgs) {
     const threadID = params.threadID;
@@ -29,12 +31,15 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export async function action({ request, params }: LoaderFunctionArgs) {
     const formData = await request.formData();
     const updates = Object.fromEntries(formData);
-
+    const author = await getUserId(request);
+    if (!author) {
+      throw new Response("Unauthorized", { status: 401 });
+    }
     console.log(updates);
     const content = formData.get("content") as string;
     const parentId = formData.get("parentId") as string;
-    console.log("Received reply:", content, "to parent ID:", parentId);
-    const threadID = await insertComment(content, parentId ? parseInt(parentId) : undefined);
+    console.log(author, content, parentId);
+    const threadID = await insertComment(author, content, parentId);
     redirect(`/threads/${threadID}`);
     return null;
 }
@@ -58,7 +63,7 @@ function CommentView({ comment }: { comment: any }) {
                 U
             </div>
             <span className="text-xs font-bold text-gray-700">
-                User {comment.user_id?.slice(0, 4) || "Anon"}
+                {`${getName(comment.user_id)}` || "User Anon"}
             </span>
           </div>
           <span className="text-xs text-gray-400">

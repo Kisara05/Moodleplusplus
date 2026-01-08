@@ -2,6 +2,8 @@
  * Routes Configuration - Moodleplusplus LMS
  */
 
+import path from "path";
+
 export const routesConfig = {
   // 1. PUBLIC: Không cần đăng nhập
   public: {
@@ -9,10 +11,14 @@ export const routesConfig = {
     routes: [
       { path: "", file: "routes/_public/index.tsx", index: true },
       { path: "login", file: "routes/_public/login/login.tsx" },
-      { path: "courses", file: "routes/_public/course/index.tsx" },
-      { path: "courses/:courseID", file: "routes/_public/course/$courseID.tsx" },
-      { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
+      // { path: "courses", file: "routes/_public/course/index.tsx" },
+      // { path: "courses/:courseID", file: "routes/_public/course/$courseID.tsx" },
+      // { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
       { path: "logout", file: "routes/_public/login/logout.tsx" },
+      // {
+      //   path: "threads/:threadID",
+      //   file: "routes/_public/threads/$threadID.tsx",
+      // }
     ],
   },
 
@@ -26,10 +32,19 @@ export const routesConfig = {
         path: "courses/:courseID",
         file: "routes/_auth/courses/$courseID/index.tsx",
       },
+      { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
       {
         path: "teaching/:courseID",
         file: "routes/_auth/teaching/index.tsx",
       },
+      {
+        path: "threads/:threadID",
+        file: "routes/_auth/threads/$threadID.tsx",
+      },
+      {
+        path: "course-registration",
+        file: "routes/_auth/course_registration/course_registration.tsx",
+      }
     ],
   },
 
@@ -52,6 +67,10 @@ export const routesConfig = {
       },
       { path: "post/:postID", file: "routes/_admin/post/$postID.tsx" },
       { path: "post/:postID/edit", file: "routes/_admin/post/edit.tsx" },
+      {
+        path: "threads/:threadID",
+        file: "routes/_admin/threads/$threadID.tsx",
+      }
     ],
   },
 };
