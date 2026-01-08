@@ -487,7 +487,9 @@ export default function CourseDetail() {
           ))
         ) : (
           <div style={itemStyle}>
-            <span>No items available</span>
+            <span>
+              {language === "en" ? "No items available" : "Không có gì ở đây cả."}
+            </span>
           </div>
         )}
         {isTeacher && (
