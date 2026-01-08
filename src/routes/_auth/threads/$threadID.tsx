@@ -30,6 +30,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export async function action({ request, params }: LoaderFunctionArgs) {
     const formData = await request.formData();
+    const theID = params.threadID;
+    if (!theID) throw new Response("Thread ID Missing", { status: 400 });
     const updates = Object.fromEntries(formData);
     const author = await getUserId(request);
     if (!author) {
@@ -39,7 +41,7 @@ export async function action({ request, params }: LoaderFunctionArgs) {
     const content = formData.get("content") as string;
     const parentId = formData.get("parentId") as string;
     console.log(author, content, parentId);
-    const threadID = await insertComment(author, content, parentId);
+    const threadID = await insertComment(author, content, parentId, theID);
     redirect(`/threads/${threadID}`);
     return null;
 }
