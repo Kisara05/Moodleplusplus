@@ -61,3 +61,52 @@ Moodleplusplus/
 └── yarnrc.yml
 └── eslint.config.js #
 ```
+
+## Testing Quiz UI on Localhost
+
+### Quick Start
+
+1. **Start the development server:**
+   ```bash
+   yarn dev
+   # Server should start at http://localhost:5173
+   ```
+
+2. **Test URLs** - See `QUIZ_TESTING_GUIDE.md` for complete testing instructions
+
+### Quick Test URLs
+
+**Create Quiz Pages (Teacher/Admin - user_flag=0):**
+- Main Create Quiz: `/courses/test-course-123/create-quiz?signed_in=1&user_flag=0`
+- Multiple Choice 1: `/courses/test-course-123/create-quiz-multiplechoice1?signed_in=1&user_flag=0`
+- Multiple Choice 2: `/courses/test-course-123/create-quiz-multiplechoice2?signed_in=1&user_flag=0`
+
+**Take Quiz Pages (Student - user_flag=1):**
+- Take Quiz 1: `/courses/test-course-123/take-quiz-1?signed_in=1&user_flag=1&quizId=quiz1`
+- Take Quiz 2: `/courses/test-course-123/take-quiz-2?signed_in=1&user_flag=1&quizId=quiz1`
+- Take Quiz Free Response: `/courses/test-course-123/take-quiz-free-response?signed_in=1&user_flag=1&quizId=quiz1`
+
+### Key Features to Test
+
+**Create Quiz Multiple Choice 1:**
+- Click gear icon (⚙️) → Settings dialog with:
+  - Number of questions input
+  - Shuffle questions (Yes/No)
+  - Shuffle answers (Yes/No)
+  - Confirm button
+- Number of questions input removed from main page
+
+**Take Quiz 2:**
+- **5-column table structure:**
+  - Column 1: Question index (1-25)
+  - Columns 2-5: A, B, C, D choice buttons
+  - Selected choices turn green
+  - Click again to deselect
+- **No mini board** - all questions visible in table
+- **No Cancel button** - only Submit button
+
+**All Take Quiz Pages:**
+- **No Cancel buttons** - only Submit buttons
+- Submit confirmation dialogs work correctly
+
+For detailed testing instructions, see `QUIZ_TESTING_GUIDE.md`

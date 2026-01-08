@@ -53,6 +53,7 @@ export default function CreateQuizMultipleChoice2() {
   const [numQuestions, setNumQuestions] = useState(25);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [questions, setQuestions] = useState<Question[]>(() => {
     const initial: Question[] = [];
     for (let i = 0; i < 25; i++) {
@@ -110,11 +111,9 @@ export default function CreateQuizMultipleChoice2() {
 
   const isQuestionComplete = (index: number): boolean => {
     const q = questions[index];
-    return (
-      q.choices.length >= 2 &&
-      q.choices.every(c => c.trim() !== "") &&
-      q.correctAnswer !== null
-    );
+    // For multiplechoice2, choices are static labels (A, B, C, D)
+    // Only need to check if correct answer is selected
+    return q.correctAnswer !== null;
   };
 
   const allQuestionsComplete = (): boolean => {
@@ -136,6 +135,11 @@ export default function CreateQuizMultipleChoice2() {
   };
 
   const handleCancel = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelDialog(false);
     navigate(`/courses/${sectionId}?signed_in=1&user_flag=${user_flag}`);
   };
 
@@ -470,6 +474,33 @@ export default function CreateQuizMultipleChoice2() {
             <button style={dialogButtonStyle} onClick={() => setShowErrorDialog(false)}>
               {currentLanguage === "en" ? "OK" : "Đồng ý"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Dialog */}
+      {showCancelDialog && (
+        <div style={dialogOverlayStyle} onClick={() => setShowCancelDialog(false)}>
+          <div style={dialogStyle} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>
+              {currentLanguage === "en" ? "Confirm Cancel" : "Xác nhận hủy"}
+            </h3>
+            <p>
+              {currentLanguage === "en"
+                ? "Are you sure you want to cancel? All unsaved changes will be lost."
+                : "Bạn có chắc chắn muốn hủy? Tất cả thay đổi chưa lưu sẽ bị mất."}
+            </p>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <button style={dialogButtonStyle} onClick={handleConfirmCancel}>
+                {currentLanguage === "en" ? "Yes, Cancel" : "Có, hủy"}
+              </button>
+              <button
+                style={{ ...dialogButtonStyle, backgroundColor: "#D9D9D9", color: "#000000" }}
+                onClick={() => setShowCancelDialog(false)}
+              >
+                {currentLanguage === "en" ? "No" : "Không"}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const user_flag = parseInt(url.searchParams.get("user_flag") || "0");
   const language = (url.searchParams.get("lang") as "en" | "vi") || "en";
   const sectionId = params.courseID;
+  const quizId = url.searchParams.get("quizId") || null;
 
   if (!signed_in) {
     throw new Response(null, {
@@ -28,6 +29,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       language,
       sectionId,
       section,
+      quizId,
     });
   } catch (error) {
     console.error("Error loading section data:", error);
@@ -37,6 +39,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       language,
       sectionId,
       section: null,
+      quizId: null,
     });
   }
 }
@@ -50,7 +53,7 @@ interface Question {
 }
 
 export default function CreateQuizMultipleChoice1() {
-  const { signed_in, user_flag, language, sectionId, section } = useLoaderData<typeof loader>();
+  const { signed_in, user_flag, language, sectionId, section, quizId } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
   const [numQuestions, setNumQuestions] = useState(25);
@@ -58,8 +61,11 @@ export default function CreateQuizMultipleChoice1() {
   const [isAnswerMode, setIsAnswerMode] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showNumQuestionsDialog, setShowNumQuestionsDialog] = useState(false);
   const [tempNumQuestions, setTempNumQuestions] = useState(25);
+  const [shuffleQuestions, setShuffleQuestions] = useState(true);
+  const [shuffleAnswers, setShuffleAnswers] = useState(true);
   const [questions, setQuestions] = useState<Question[]>(() => {
     const initial: Question[] = [];
     for (let i = 0; i < 25; i++) {
@@ -172,6 +178,11 @@ export default function CreateQuizMultipleChoice1() {
   };
 
   const handleCancel = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelDialog(false);
     navigate(`/courses/${sectionId}?signed_in=1&user_flag=${user_flag}`);
   };
 
@@ -204,6 +215,11 @@ export default function CreateQuizMultipleChoice1() {
     display: "flex",
     flexDirection: "column",
     gap: "1rem",
+    position: "sticky",
+    top: "2rem",
+    alignSelf: "flex-start",
+    maxHeight: "calc(100vh - 4rem)",
+    overflowY: "auto",
   };
 
   const filterBarStyle: React.CSSProperties = {
@@ -253,7 +269,7 @@ export default function CreateQuizMultipleChoice1() {
   };
 
   const numQuestionsInputStyle: React.CSSProperties = {
-    width: "80px",
+    width: "100px",
     padding: "0.5rem",
     fontSize: "1rem",
     border: "2px solid #D9D9D9",
@@ -329,17 +345,17 @@ export default function CreateQuizMultipleChoice1() {
     marginBottom: "1rem",
   };
 
-  const correctAnswerBoxStyle: React.CSSProperties = {
+  const getCorrectAnswerBoxStyle = (): React.CSSProperties => ({
     width: "24px",
     height: "24px",
-    border: isAnswerMode ? "2px solid #0A853F" : "2px solid #0A853F",
-    backgroundColor: isAnswerMode ? "#0A853F" : "#FFFFFF",
+    border: "2px solid #0A853F",
+    backgroundColor: currentQuestion.correctAnswer !== null ? "#0A853F" : "#FFFFFF",
     borderRadius: "4px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-  };
+  });
 
   const choicesContainerStyle: React.CSSProperties = {
     display: "grid",
@@ -433,6 +449,34 @@ export default function CreateQuizMultipleChoice1() {
     fontWeight: "500",
   });
 
+  const radioGroupStyle: React.CSSProperties = {
+    display: "flex",
+    gap: "2rem",
+    alignItems: "center",
+  };
+
+  const radioOptionStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    cursor: "pointer",
+  };
+
+  const radioButtonStyle: React.CSSProperties = {
+    width: "20px",
+    height: "20px",
+    borderRadius: "4px",
+    border: "2px solid #565656",
+    position: "relative",
+    backgroundColor: "#FFFFFF",
+  };
+
+  const radioButtonCheckedStyle: React.CSSProperties = {
+    ...radioButtonStyle,
+    backgroundColor: "#0A853F",
+    borderColor: "#0A853F",
+  };
+
   const dialogOverlayStyle: React.CSSProperties = {
     position: "fixed",
     top: 0,
@@ -449,9 +493,18 @@ export default function CreateQuizMultipleChoice1() {
   const dialogStyle: React.CSSProperties = {
     backgroundColor: "#FFFFFF",
     padding: "2rem",
-    borderRadius: "8px",
-    maxWidth: "400px",
+    borderRadius: "12px",
+    maxWidth: "500px",
     width: "90%",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    color: "#2C8B85",
+    marginBottom: "1.5rem",
+    marginTop: 0,
   };
 
   const dialogButtonStyle: React.CSSProperties = {
@@ -464,6 +517,17 @@ export default function CreateQuizMultipleChoice1() {
     fontWeight: "500",
     cursor: "pointer",
     marginTop: "1rem",
+  };
+
+  const confirmButtonStyle: React.CSSProperties = {
+    padding: "0.75rem 2rem",
+    backgroundColor: "#2C8B85",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "1rem",
+    fontWeight: "500",
+    cursor: "pointer",
   };
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -492,7 +556,10 @@ export default function CreateQuizMultipleChoice1() {
           </h1>
           <div style={pageSubtitleStyle}>
             <span>
-              {currentLanguage === "en" ? "Creating Quiz in In-class assignments" : "Tạo Quiz trong Bài tập trên lớp"}
+              {quizId
+                ? (currentLanguage === "en" ? "Updating Quiz 1 in In-class assignments" : "Cập nhật Quiz 1 trong Bài tập trên lớp")
+                : (currentLanguage === "en" ? "Creating Quiz in In-class assignments" : "Tạo Quiz trong Bài tập trên lớp")
+              }
             </span>
             <span style={gearIconStyle} onClick={() => {
               setTempNumQuestions(numQuestions);
@@ -500,25 +567,6 @@ export default function CreateQuizMultipleChoice1() {
             }}>
               ⚙️
             </span>
-          </div>
-
-          {/* Number of Questions */}
-          <div style={numQuestionsContainerStyle}>
-            <label style={labelStyle}>
-              {currentLanguage === "en" ? "Number of questions" : "Số câu hỏi"}
-            </label>
-            <input
-              type="number"
-              value={numQuestions}
-              onChange={(e) => {
-                const num = parseInt(e.target.value);
-                if (!isNaN(num) && num > 0) {
-                  handleNumQuestionsChange(num);
-                }
-              }}
-              style={numQuestionsInputStyle}
-              min="1"
-            />
           </div>
 
           {/* Text Description */}
@@ -575,7 +623,7 @@ export default function CreateQuizMultipleChoice1() {
               <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "bold" }}>
                 {currentLanguage === "en" ? "Answers" : "Câu trả lời"}
               </h3>
-              <div style={correctAnswerBoxStyle} onClick={handleCorrectAnswerClick} />
+              <div style={getCorrectAnswerBoxStyle()} onClick={handleCorrectAnswerClick} />
               <span style={{ fontSize: "0.9rem", color: "#565656" }}>
                 {currentLanguage === "en" ? "Correct answer" : "Câu trả lời đúng"}
               </span>
@@ -586,6 +634,7 @@ export default function CreateQuizMultipleChoice1() {
                 {currentQuestion.choices.map((choice, index) => (
                   <button
                     key={index}
+                    type="button"
                     style={choiceButtonStyle(currentQuestion.correctAnswer === index, true)}
                     onClick={() => handleChoiceSelect(index)}
                   >
@@ -596,14 +645,31 @@ export default function CreateQuizMultipleChoice1() {
             ) : (
               <div style={choicesContainerStyle}>
                 {currentQuestion.choices.map((choice, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    value={choice}
-                    onChange={(e) => handleChoiceChange(index, e.target.value)}
-                    style={choiceInputStyle}
-                    placeholder={`${currentLanguage === "en" ? "Insert" : "Nhập"} ${String.fromCharCode(65 + index)} ${currentLanguage === "en" ? "choice here" : "lựa chọn"}`}
-                  />
+                  <div key={index} style={{ position: "relative" }}>
+                    <input
+                      type="text"
+                      value={choice}
+                      onChange={(e) => handleChoiceChange(index, e.target.value)}
+                      style={{
+                        ...choiceInputStyle,
+                        borderColor: currentQuestion.correctAnswer === index ? "#0A853F" : "#D9D9D9",
+                        backgroundColor: currentQuestion.correctAnswer === index ? "#F0F9F7" : "#FFFFFF",
+                      }}
+                      placeholder={`${currentLanguage === "en" ? "Insert" : "Nhập"} ${String.fromCharCode(65 + index)} ${currentLanguage === "en" ? "choice here" : "lựa chọn"}`}
+                    />
+                    {currentQuestion.correctAnswer === index && (
+                      <div style={{
+                        position: "absolute",
+                        right: "0.5rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#0A853F",
+                        fontWeight: "bold",
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -663,6 +729,33 @@ export default function CreateQuizMultipleChoice1() {
         </div>
       )}
 
+      {/* Cancel Confirmation Dialog */}
+      {showCancelDialog && (
+        <div style={dialogOverlayStyle} onClick={() => setShowCancelDialog(false)}>
+          <div style={dialogStyle} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>
+              {currentLanguage === "en" ? "Confirm Cancel" : "Xác nhận hủy"}
+            </h3>
+            <p>
+              {currentLanguage === "en"
+                ? "Are you sure you want to cancel? All unsaved changes will be lost."
+                : "Bạn có chắc chắn muốn hủy? Tất cả thay đổi chưa lưu sẽ bị mất."}
+            </p>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <button style={dialogButtonStyle} onClick={handleConfirmCancel}>
+                {currentLanguage === "en" ? "Yes, Cancel" : "Có, hủy"}
+              </button>
+              <button
+                style={{ ...dialogButtonStyle, backgroundColor: "#D9D9D9", color: "#000000" }}
+                onClick={() => setShowCancelDialog(false)}
+              >
+                {currentLanguage === "en" ? "No" : "Không"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Error Dialog */}
       {showErrorDialog && (
         <div style={dialogOverlayStyle} onClick={() => setShowErrorDialog(false)}>
@@ -682,15 +775,20 @@ export default function CreateQuizMultipleChoice1() {
         </div>
       )}
 
-      {/* Number of Questions Dialog */}
+      {/* Quiz Settings Dialog */}
       {showNumQuestionsDialog && (
         <div style={dialogOverlayStyle} onClick={() => setShowNumQuestionsDialog(false)}>
           <div style={dialogStyle} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ marginTop: 0 }}>
-              {currentLanguage === "en" ? "Change Number of Questions" : "Thay đổi số câu hỏi"}
-            </h3>
-            <div style={{ marginBottom: "1rem" }}>
-              <label style={labelStyle}>
+            <h2 style={titleStyle}>
+              {quizId
+                ? (currentLanguage === "en" ? "Updating Quiz 1 in In-class assignments" : "Cập nhật Quiz 1 trong Bài tập trên lớp")
+                : (currentLanguage === "en" ? "Creating Quiz in In-class assignments" : "Tạo Quiz trong Bài tập trên lớp")
+              }
+            </h2>
+            
+            {/* Number of Questions */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ ...labelStyle, marginBottom: "0.5rem", display: "block" }}>
                 {currentLanguage === "en" ? "Number of questions" : "Số câu hỏi"}
               </label>
               <input
@@ -707,21 +805,131 @@ export default function CreateQuizMultipleChoice1() {
                 autoFocus
               />
             </div>
-            <div style={{ display: "flex", gap: "1rem" }}>
+
+            {/* Shuffle Questions */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ ...labelStyle, marginBottom: "0.5rem", display: "block" }}>
+                {currentLanguage === "en" ? "Shuffle questions" : "Xáo trộn câu hỏi"}
+              </label>
+              <div style={radioGroupStyle}>
+                <label style={radioOptionStyle}>
+                  <div style={shuffleQuestions ? radioButtonCheckedStyle : radioButtonStyle}>
+                    {shuffleQuestions && (
+                      <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#FFFFFF",
+                      }} />
+                    )}
+                  </div>
+                  <input
+                    type="radio"
+                    name="shuffleQuestions"
+                    checked={shuffleQuestions}
+                    onChange={() => setShuffleQuestions(true)}
+                    style={{ display: "none" }}
+                  />
+                  <span>{currentLanguage === "en" ? "Yes" : "Có"}</span>
+                </label>
+                <label style={radioOptionStyle}>
+                  <div style={!shuffleQuestions ? radioButtonCheckedStyle : radioButtonStyle}>
+                    {!shuffleQuestions && (
+                      <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#FFFFFF",
+                      }} />
+                    )}
+                  </div>
+                  <input
+                    type="radio"
+                    name="shuffleQuestions"
+                    checked={!shuffleQuestions}
+                    onChange={() => setShuffleQuestions(false)}
+                    style={{ display: "none" }}
+                  />
+                  <span>{currentLanguage === "en" ? "No" : "Không"}</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Shuffle Answers */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ ...labelStyle, marginBottom: "0.5rem", display: "block" }}>
+                {currentLanguage === "en" ? "Shuffle answers" : "Xáo trộn câu trả lời"}
+              </label>
+              <div style={radioGroupStyle}>
+                <label style={radioOptionStyle}>
+                  <div style={shuffleAnswers ? radioButtonCheckedStyle : radioButtonStyle}>
+                    {shuffleAnswers && (
+                      <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#FFFFFF",
+                      }} />
+                    )}
+                  </div>
+                  <input
+                    type="radio"
+                    name="shuffleAnswers"
+                    checked={shuffleAnswers}
+                    onChange={() => setShuffleAnswers(true)}
+                    style={{ display: "none" }}
+                  />
+                  <span>{currentLanguage === "en" ? "Yes" : "Có"}</span>
+                </label>
+                <label style={radioOptionStyle}>
+                  <div style={!shuffleAnswers ? radioButtonCheckedStyle : radioButtonStyle}>
+                    {!shuffleAnswers && (
+                      <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#FFFFFF",
+                      }} />
+                    )}
+                  </div>
+                  <input
+                    type="radio"
+                    name="shuffleAnswers"
+                    checked={!shuffleAnswers}
+                    onChange={() => setShuffleAnswers(false)}
+                    style={{ display: "none" }}
+                  />
+                  <span>{currentLanguage === "en" ? "No" : "Không"}</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Confirm Button */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2rem" }}>
               <button
-                style={dialogButtonStyle}
+                style={confirmButtonStyle}
                 onClick={() => {
                   handleNumQuestionsChange(tempNumQuestions);
                   setShowNumQuestionsDialog(false);
                 }}
               >
-                {currentLanguage === "en" ? "OK" : "Đồng ý"}
-              </button>
-              <button
-                style={{ ...dialogButtonStyle, backgroundColor: "#D9D9D9", color: "#000000" }}
-                onClick={() => setShowNumQuestionsDialog(false)}
-              >
-                {currentLanguage === "en" ? "Cancel" : "Hủy"}
+                {currentLanguage === "en" ? "Confirm" : "Xác nhận"}
               </button>
             </div>
           </div>
