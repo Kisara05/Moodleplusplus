@@ -137,6 +137,7 @@ export default function CreateQuiz() {
     language,
     section,
     quizId,
+    sectionId,
   } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigate = useNavigate();
@@ -468,11 +469,14 @@ export default function CreateQuiz() {
             style={expandAllStyle}
             onClick={(e) => {
               e.preventDefault();
-              setGeneralExpanded(true);
-              setCommonExpanded(true);
+              const allExpanded = generalExpanded && commonExpanded;
+              setGeneralExpanded(!allExpanded);
+              setCommonExpanded(!allExpanded);
             }}
           >
-            {currentLanguage === "en" ? "Expand all" : "Mở rộng tất cả"}
+            {generalExpanded && commonExpanded
+              ? (currentLanguage === "en" ? "Collapse all" : "Thu gọn toàn bộ")
+              : (currentLanguage === "en" ? "Expand all" : "Mở rộng tất cả")}
           </a>
         </div>
 
@@ -930,7 +934,7 @@ export default function CreateQuiz() {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/?signed_in=1&user_flag=${user_flag}`)}
+              onClick={() => navigate(`/courses/${sectionId}?signed_in=1&user_flag=${user_flag}`)}
               style={cancelButtonStyle}
             >
               {currentLanguage === "en" ? "Cancel" : "Hủy"}
