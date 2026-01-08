@@ -79,7 +79,8 @@ export async function getThreads(postId: string) {
     return discussions;
 }
 
-export async function createDiscussionThread(postId: string, title: string, firstcontent: string) {
+export async function createDiscussionThread(author: string, postId: string, title: string, firstcontent: string) {
+  console.log(author, postId, title, firstcontent);
   console.log("Creating discussion thread", title, "for postId:", postId);
   const { data: threadData, error: threadError } = await supabase
     .from("threads")
@@ -98,7 +99,7 @@ export async function createDiscussionThread(postId: string, title: string, firs
   const threadId = threadData.thread_id;
   console.log(threadId);
   console.log("Successfully created thread:", threadId);
-  const error = await insertComment(firstcontent, undefined, threadId);
+  const error = await insertComment(author, firstcontent, undefined, threadId);
   return null;
 }
 

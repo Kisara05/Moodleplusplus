@@ -24,19 +24,21 @@ export type CommentNode = CommentRow & {
   replies: CommentNode[];
 };
 
-export async function insertComment(authorID: string, content: string, parentId: string) {
+export async function insertComment(authorID: string, content: string, parentId: string | undefined, threadId?: string) {
   console.log(authorID, content, parentId);
   console.log("Inserting comment. Parent ID:", parentId, "Content:", content);
-  const { data, error } = await supabase
-    .from("discussion")
-    .select("thread_id")
-    .eq("discussion_id", parentId)
-    .single();
-  if (error) {
-    console.error("Error fetching parent comment for thread ID:", error);
-    throw error;
+  if (!threadId && !parentId) {
+    const { data, error } = await supabase
+      .from("discussion")
+      .select("thread_id")
+      .eq("discussion_id", parentId)
+      .single();
+    if (error) {
+      console.error("Error fetching parent comment for thread ID:", error);
+      throw error;
+    }
+    threadId = data?.thread_id;
   }
-  const threadId = data?.thread_id;
 
   const { data: insertData, error: insertError } = await supabase
     .from("discussion")

@@ -32,7 +32,7 @@ export const routesConfig = {
         path: "courses/:courseID",
         file: "routes/_auth/courses/$courseID/index.tsx",
       },
-      { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
+      { path: "post/:postID", file: "routes/_auth/post/$postID.tsx" },
       {
         path: "teaching/:courseID",
         file: "routes/_auth/teaching/index.tsx",
