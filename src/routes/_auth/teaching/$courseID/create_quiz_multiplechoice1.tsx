@@ -1,12 +1,13 @@
 import { useLoaderData, useNavigate, useLocation, useSubmit, useActionData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect, unstable_composeUploadHandlers, unstable_createMemoryUploadHandler, unstable_parseMultipartFormData, type ActionFunctionArgs} from "@remix-run/node";
-import { Header } from "~/components/layout/header";
-import { Footer } from "~/components/layout/footer";
+import { Header } from "~/components/layout/header_quiz"; 
+import { Footer } from "~/components/layout/footer_quiz"; 
 import { useState, useRef, useEffect } from "react";
 import { getSectionWithCourseDetails } from "~/services/course.server";
 import { createClient } from "@supabase/supabase-js";
 
+// --- LOADER (Unchanged) ---
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const signed_in = url.searchParams.get("signed_in") === "1";
@@ -23,6 +24,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 }
 
+// --- ACTION (Unchanged) ---
 export async function action({ request, params }: ActionFunctionArgs) {
   console.log("--- DEBUG: Action Started ---");
   
@@ -38,7 +40,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return json({ error: "Failed to parse form data (File too large?)" });
   }
 
-  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const sectionId = params.courseID;
 
   // 1. Parse Basic Fields
@@ -46,25 +48,19 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const description = String(formData.get("description"));
   const displayDescription = formData.get("displayDescription") === "true";
 
-  // 2. RECONSTRUCT DATES (The Fix)
-  // The client sends 'publishDate', 'publishHour' etc. separately.
-  // We must combine them into a valid timestamp string (UTC+7)
+  // 2. RECONSTRUCT DATES
   const pad = (n: any) => String(n).padStart(2, '0');
 
   const pDate = formData.get("publishDate");
   const pHour = formData.get("publishHour") || "00";
   const pMin = formData.get("publishMinute") || "00";
   const pSec = formData.get("publishSecond") || "00";
-  
-  // If pDate exists, format it. Otherwise null.
   const openTime = pDate ? `${pDate}T${pad(pHour)}:${pad(pMin)}:${pad(pSec)}+07:00` : null;
 
   const dDate = formData.get("durationDate");
   const dHour = formData.get("durationHour") || "23";
   const dMin = formData.get("durationMinute") || "59";
   const dSec = formData.get("durationSecond") || "59";
-  
-  // If dDate exists, format it. Otherwise null.
   const deadline = dDate ? `${dDate}T${pad(dHour)}:${pad(dMin)}:${pad(dSec)}+07:00` : null;
 
   // 3. Parse Time Limit
@@ -95,21 +91,20 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return json({ error: `Post Creation Failed: ${postError.message}` });
   }
 
-  // 5. Create Quiz (Now using the correctly constructed openTime/deadline)
+  // 5. Create Quiz
   const { data: quiz, error: quizError } = await supabase.from("quiz").insert({
     post_id: post.post_id,
     title: title,
     description: description,
     display_description: displayDescription,
-    open_time: openTime,   // <--- These are now valid timestamps
-    deadline: deadline,    // <--- instead of null
+    open_time: openTime,
+    deadline: deadline,
     time_limit: timeLimitSeconds,
     grade: questions.length
   }).select("quiz_id").single();
 
   if (quizError) {
     console.error("DB Error (Quiz):", quizError);
-    // Optional: Delete the orphaned post if quiz creation fails
     await supabase.from("posts").delete().eq("post_id", post.post_id); 
     return json({ error: `Quiz Metadata Failed: ${quizError.message}` });
   }
@@ -165,15 +160,18 @@ interface Question {
   correctAnswer: number | null;
 }
 
+// --- COMPONENT ---
 export default function CreateQuizMultipleChoice1() {
   const { signed_in, user_flag, language, sectionId, section } = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>(); // <--- NEW: Capture Server Errors
+  const actionData = useActionData<typeof action>();
   const navigate = useNavigate();
   const submit = useSubmit();
   const location = useLocation();
-  const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
   
-  // State initialization
+  // --- 1. EXTRACT DATA IMMEDIATELY ---
+  const quizHeaderData = location.state?.quizHeaderData;
+
+  const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
   const [numQuestions, setNumQuestions] = useState(25);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAnswerMode, setIsAnswerMode] = useState(false);
@@ -181,6 +179,7 @@ export default function CreateQuizMultipleChoice1() {
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [showNumQuestionsDialog, setShowNumQuestionsDialog] = useState(false);
   const [tempNumQuestions, setTempNumQuestions] = useState(25);
+  
   const [questions, setQuestions] = useState<Question[]>(() => {
     const initial: Question[] = [];
     for (let i = 0; i < 25; i++) {
@@ -194,10 +193,13 @@ export default function CreateQuizMultipleChoice1() {
     }
     return initial;
   });
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // --- 2. EFFECT FOR REDIRECT ---
   useEffect(() => {
-    if (!location.state?.quizHeaderData) {
+    if (!quizHeaderData) {
+      console.warn("CLIENT DEBUG: Missing Header Data, redirecting back...");
       const params = new URLSearchParams({
         signed_in: signed_in ? "1" : "0",
         user_flag: String(user_flag),
@@ -205,8 +207,14 @@ export default function CreateQuizMultipleChoice1() {
       });
       navigate(`/courses/${sectionId}/create_quiz?${params.toString()}`);
     }
-  }, [location.state, navigate, sectionId, signed_in, user_flag, language]);
+  }, [quizHeaderData, navigate, sectionId, signed_in, user_flag, language]);
 
+  // --- 3. GUARD CLAUSE (EARLY RETURN) ---
+  if (!quizHeaderData) {
+    return null;
+  }
+
+  // ... (Handlers) ...
   const handleNumQuestionsChange = (rawNum: number) => {
       let newNum = rawNum;
       if (newNum < 1) newNum = 1;
@@ -218,57 +226,44 @@ export default function CreateQuizMultipleChoice1() {
         const newQuestions: Question[] = [];
         for (let i = 0; i < newNum; i++) {
           if (i < oldNum) newQuestions.push(questions[i]);
-          else newQuestions.push({
-            textDescription: "",
-            imageFile: null,
-            imagePreview: null,
-            choices: ["", "", "", ""],
-            correctAnswer: null,
-          });
+          else newQuestions.push({ textDescription: "", imageFile: null, imagePreview: null, choices: ["", "", "", ""], correctAnswer: null });
         }
         setQuestions(newQuestions);
       } else if (newNum < oldNum) {
         setQuestions(questions.slice(0, newNum));
         if (currentQuestionIndex >= newNum) setCurrentQuestionIndex(newNum - 1);
       }
-    };
-
-  const handleQuestionClick = (index: number) => {
-    setCurrentQuestionIndex(index);
-    setIsAnswerMode(false);
   };
 
-  const handleChoiceChange = (choiceIndex: number, value: string) => {
+  const handleQuestionClick = (index: number) => { setCurrentQuestionIndex(index); setIsAnswerMode(false); };
+  const handleChoiceChange = (choiceIndex: number, value: string) => { const newQuestions = [...questions]; newQuestions[currentQuestionIndex].choices[choiceIndex] = value; setQuestions(newQuestions); };
+  const handleCorrectAnswerClick = () => { setIsAnswerMode(!isAnswerMode); };
+  const handleChoiceSelect = (choiceIndex: number) => { if (isAnswerMode) { const newQuestions = [...questions]; newQuestions[currentQuestionIndex].correctAnswer = choiceIndex; setQuestions(newQuestions); } };
+  
+  // --- UPDATED IMAGE HANDLERS ---
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => { 
+      const file = e.target.files?.[0]; 
+      if (file) { 
+          const newQuestions = [...questions]; 
+          newQuestions[currentQuestionIndex].imageFile = file; 
+          const reader = new FileReader(); 
+          reader.onloadend = () => { 
+              newQuestions[currentQuestionIndex].imagePreview = reader.result as string; 
+              setQuestions(newQuestions); 
+          }; 
+          reader.readAsDataURL(file); 
+      } 
+  };
+
+  const handleRemoveImage = () => {
     const newQuestions = [...questions];
-    newQuestions[currentQuestionIndex].choices[choiceIndex] = value;
+    newQuestions[currentQuestionIndex].imageFile = null;
+    newQuestions[currentQuestionIndex].imagePreview = null;
     setQuestions(newQuestions);
+    // Reset file input so if user uploads same file again, onChange fires
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
-
-  const handleCorrectAnswerClick = () => {
-    setIsAnswerMode(!isAnswerMode);
-  };
-
-  const handleChoiceSelect = (choiceIndex: number) => {
-    if (isAnswerMode) {
-      const newQuestions = [...questions];
-      newQuestions[currentQuestionIndex].correctAnswer = choiceIndex;
-      setQuestions(newQuestions);
-    }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const newQuestions = [...questions];
-      newQuestions[currentQuestionIndex].imageFile = file;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newQuestions[currentQuestionIndex].imagePreview = reader.result as string;
-        setQuestions(newQuestions);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // -----------------------------
 
   const isQuestionComplete = (index: number): boolean => {
     const q = questions[index];
@@ -284,8 +279,14 @@ export default function CreateQuizMultipleChoice1() {
     return questions.every((_, index) => isQuestionComplete(index));
   };
 
+  const handleCancel = () => {
+    navigate(`/courses/${sectionId}?signed_in=1&user_flag=${user_flag}`);
+  };
+
   const handleSave = () => {
     if (!allQuestionsComplete()) {
+      const failedIndex = questions.findIndex((_, i) => !isQuestionComplete(i));
+      alert(`CLIENT DEBUG: Validation Failed at Question ${failedIndex + 1}. Check text, choices (min 2), and correct answer.`);
       setShowErrorDialog(true);
       return;
     }
@@ -293,21 +294,17 @@ export default function CreateQuizMultipleChoice1() {
   };
 
   const handleConfirmSave = () => {
-    const headerData = location.state?.quizHeaderData; 
-    if (!headerData) {
-        console.error("Missing Header Data");
-        return;
-    }
+    if (!quizHeaderData) return;
     
     if (!allQuestionsComplete()) {
+       alert("CLIENT ERROR: Questions validation failed.");
        setShowErrorDialog(true);
        return; 
     }
 
     const formData = new FormData();
-    Object.entries(headerData).forEach(([key, value]) => {
-      // Ensure we don't send "null" string for actual nulls if possible, 
-      // but FormData is always string. We handle parsing in Action.
+    Object.entries(quizHeaderData).forEach(([key, value]) => {
+      if (value === null || value === undefined) return; 
       formData.append(key, String(value));
     });
 
@@ -327,21 +324,22 @@ export default function CreateQuizMultipleChoice1() {
         hasImage: !!q.imageFile
       };
     });
-    
+
     formData.append("questions", JSON.stringify(questionsPayload));
-    submit(formData, { method: "post", encType: "multipart/form-data" });
-    setShowConfirmDialog(false);
+
+    try {
+        console.log("CLIENT: Submitting now...");
+        submit(formData, { method: "post", encType: "multipart/form-data" });
+        setShowConfirmDialog(false);
+    } catch (e) {
+        alert("CLIENT ERROR: Submit function crashed. Check console.");
+        console.error(e);
+    }
   };
 
-  const handleCancel = () => {
-    navigate(`/courses/${sectionId}?signed_in=1&user_flag=${user_flag}`);
-  };
-
-  // Styles
+  // ... Styles ...
   const containerStyle: React.CSSProperties = { minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#FFFFFF" };
   const mainStyle: React.CSSProperties = { flex: 1, padding: "2rem", maxWidth: "1400px", margin: "0 auto", width: "100%", display: "flex", gap: "2rem" };
-  // ... (Keep your existing styles, omit here for brevity if unchanged, but ensure they are present in file)
-  // Re-declare styles for safety in this copy-paste block:
   const leftPanelStyle: React.CSSProperties = { flex: 1, display: "flex", flexDirection: "column" };
   const rightPanelStyle: React.CSSProperties = { minWidth: "200px", width: "auto", display: "flex", flexDirection: "column", gap: "1rem" };
   const filterBarStyle: React.CSSProperties = { display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" };
@@ -355,8 +353,31 @@ export default function CreateQuizMultipleChoice1() {
   const formGroupStyle: React.CSSProperties = { marginBottom: "1.5rem" };
   const labelStyle: React.CSSProperties = { display: "block", fontSize: "1rem", fontWeight: "500", color: "#000000", marginBottom: "0.5rem" };
   const textareaStyle: React.CSSProperties = { width: "100%", padding: "0.75rem", fontSize: "1rem", border: "2px solid #D9D9D9", borderRadius: "8px", outline: "none", minHeight: "120px", resize: "vertical", fontFamily: "inherit" };
+  
   const imageUploadBoxStyle: React.CSSProperties = { width: "200px", height: "200px", border: "2px solid #2C8B85", borderRadius: "8px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", backgroundColor: "#FFFFFF", position: "relative" };
   const imagePreviewStyle: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" };
+  
+  // --- STYLE FOR REMOVE BUTTON ---
+  const removeImageButtonStyle: React.CSSProperties = {
+      position: "absolute",
+      top: "5px",
+      right: "5px",
+      backgroundColor: "#FF0000",
+      color: "#FFFFFF",
+      border: "none",
+      borderRadius: "50%",
+      width: "24px",
+      height: "24px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "1.2rem",
+      lineHeight: "1",
+      zIndex: 10
+  };
+  // ------------------------------
+
   const answersSectionStyle: React.CSSProperties = { marginTop: "2rem" };
   const answersHeaderStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" };
   const correctAnswerBoxStyle: React.CSSProperties = { width: "24px", height: "24px", border: isAnswerMode ? "2px solid #0A853F" : "2px solid #0A853F", backgroundColor: isAnswerMode ? "#0A853F" : "#FFFFFF", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" };
@@ -379,8 +400,6 @@ export default function CreateQuizMultipleChoice1() {
   const dialogOverlayStyle: React.CSSProperties = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 };
   const dialogStyle: React.CSSProperties = { backgroundColor: "#FFFFFF", padding: "2rem", borderRadius: "8px", maxWidth: "400px", width: "90%" };
   const dialogButtonStyle: React.CSSProperties = { padding: "0.75rem 1.5rem", backgroundColor: "#2C8B85", color: "#FFFFFF", border: "none", borderRadius: "8px", fontSize: "1rem", fontWeight: "500", cursor: "pointer", marginTop: "1rem" };
-  
-  // New Error Banner Style
   const errorBannerStyle: React.CSSProperties = { backgroundColor: "#FEE2E2", border: "1px solid #F87171", color: "#B91C1C", padding: "1rem", borderRadius: "8px", marginBottom: "1.5rem", fontWeight: "500", textAlign: "center" };
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -390,8 +409,7 @@ export default function CreateQuizMultipleChoice1() {
       <Header signed_in={signed_in} user_flag={user_flag} language={currentLanguage} onLanguageChange={() => setCurrentLanguage(currentLanguage === "en" ? "vi" : "en")} userId="123" />
       <main style={mainStyle}>
         <div style={leftPanelStyle}>
-          {/* ERROR BANNER: Only shows if Action returns failure */}
-          {actionData?.error && (
+           {actionData?.error && (
             <div style={errorBannerStyle}>
               ⚠️ SERVER ERROR: {actionData.error}
             </div>
@@ -403,7 +421,6 @@ export default function CreateQuizMultipleChoice1() {
             <button style={filterButtonStyle}>Advanced Program (APCS)</button>
           </div>
           <h1 style={courseTitleStyle}>{section?.course?.course_name || "Element of Software Engineering"}</h1>
-          {/* ... existing UI ... */}
           <div style={pageSubtitleStyle}>
             <span>{currentLanguage === "en" ? "Creating Quiz in In-class assignments" : "Tạo Quiz trong Bài tập trên lớp"}</span>
             <span style={gearIconStyle} onClick={() => { setTempNumQuestions(numQuestions); setShowNumQuestionsDialog(true); }}>⚙️</span>
@@ -422,8 +439,34 @@ export default function CreateQuizMultipleChoice1() {
           <div style={formGroupStyle}>
             <label style={labelStyle}>{currentLanguage === "en" ? "Image" : "Hình ảnh"}</label>
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
-              <div style={imageUploadBoxStyle} onClick={() => fileInputRef.current?.click()}>
-                {currentQuestion.imagePreview ? <img src={currentQuestion.imagePreview} alt="Preview" style={imagePreviewStyle} /> : <><div style={{ fontSize: "2rem", color: "#2C8B85" }}>+</div><div style={{ color: "#2C8B85", marginTop: "0.5rem" }}>{currentLanguage === "en" ? "Add" : "Thêm"}</div></>}
+              <div 
+                style={imageUploadBoxStyle} 
+                onClick={() => {
+                  // Only click file input if no image or if clicking the box background (not the remove button)
+                  if (!currentQuestion.imagePreview) fileInputRef.current?.click();
+                  else fileInputRef.current?.click(); // Allow replacing if clicking the image itself
+                }}
+              >
+                {currentQuestion.imagePreview ? (
+                  <>
+                    <img src={currentQuestion.imagePreview} alt="Preview" style={imagePreviewStyle} />
+                    <button 
+                      type="button"
+                      style={removeImageButtonStyle}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Stop click from triggering file input
+                        handleRemoveImage();
+                      }}
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: "2rem", color: "#2C8B85" }}>+</div>
+                    <div style={{ color: "#2C8B85", marginTop: "0.5rem" }}>{currentLanguage === "en" ? "Add" : "Thêm"}</div>
+                  </>
+                )}
               </div>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: "none" }} />
             </div>
@@ -469,7 +512,6 @@ export default function CreateQuizMultipleChoice1() {
         </div>
       </main>
 
-      {/* Dialogs... */}
       {showConfirmDialog && (
         <div style={dialogOverlayStyle} onClick={() => setShowConfirmDialog(false)}>
           <div style={dialogStyle} onClick={(e) => e.stopPropagation()}>

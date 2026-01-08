@@ -10,8 +10,8 @@ import {
 import { Form, useLoaderData, useActionData, useNavigate, useParams, useNavigation } from "@remix-run/react";
 import { createClient } from "@supabase/supabase-js";
 import { useState, useRef } from "react";
-import { Header } from "~/components/layout/header";
-import { Footer } from "~/components/layout/footer";
+import { Header } from "~/components/layout/header_quiz";
+import { Footer } from "~/components/layout/footer_quiz";
 import { getSectionWithCourseDetails } from "~/services/course.server";
 
 // --- HELPER: Parse Aiken Format ---
@@ -368,7 +368,7 @@ export default function CreateQuiz() {
                       {answerType === "free_response" && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#FFFFFF" }} />}
                     </div>
                     <input type="radio" name="answerType" value="free_response" checked={answerType === "free_response"} onChange={() => setAnswerType("free_response")} style={{ display: "none" }} />
-                    <span>{currentLanguage === "en" ? "Free response" : "Tự do trả lời"}</span>
+                    <span>{currentLanguage === "en" ? "Free response (Question format: empty line between each question)" : "Câu hỏi mở (Định dạng câu hỏi: dòng trống giữa mỗi câu hỏi)"}</span>
                   </label>
                   <label style={radioOptionStyle}>
                     <div style={answerType === "multiple_choice" ? radioButtonCheckedStyle : radioButtonStyle}>
@@ -415,7 +415,7 @@ export default function CreateQuiz() {
                           {selectFiles === "yes" && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#FFFFFF" }} />}
                         </div>
                         <input type="radio" name="selectFiles" value="yes" checked={selectFiles === "yes"} onChange={() => setSelectFiles("yes")} style={{ display: "none" }} />
-                        <span>{currentLanguage === "en" ? "Yes" : "Có"}</span>
+                        <span>{currentLanguage === "en" ? "Yes (Aiken format)" : "Có (Định dạng Aiken)"}</span>
                       </label>
                       <label style={radioOptionStyle}>
                         <div style={selectFiles === "no" ? radioButtonCheckedStyle : radioButtonStyle}>
