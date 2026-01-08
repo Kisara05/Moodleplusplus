@@ -2,61 +2,62 @@
 
 ```bash
 Moodleplusplus/
-├── src/                        # Main source code
+├── src/                        # Source code
 │
-│ ├── components/               # Reusable UI components
-│ │ ├── common/                 # Core UI: Button.tsx, Input.tsx, Modal.tsx...
-│ │ └── layout/                 # Layout UI: Header.tsx, Footer.tsx, Sidebar.tsx
+│ ├── components/               # (Frontend) Chứa các UI components tái sử dụng
+│ │ ├── common/                 # VD: Button.tsx, Input.tsx, Modal.tsx
+│ │ └── layout/                 # VD: Header.tsx, Footer.tsx, Sidebar.tsx
 │ │
-│ ├── routes/                   # File-based routing (React Router v7)
-│ │ │                           # Each .tsx file maps to a URL and includes:
-│ │ │                           #  - Page UI (Client)
-│ │ │                           #  - Loader/Action (Server-side logic)
+│ ├── routes/                   # (Frontend + Backend) Nơi chứa các "trang" (pages)
+│ │ │                           # Mỗi file .tsx ở đây là một URL
 │ │ │
-│ │ │  Example:
+│ │ │  VD:
 │ │ │  import { type RouteConfig, index, route } from "@react-router/dev/routes";
-│ │ │  export default
-│ │ │    index("routes/_public._index.tsx"),                    // Route "/"
-│ │ │    route("admin", "routes/_public.admin.tsx"),            // /admin
-│ │ │    route("admin/products", "routes/_public.admin.user.tsx"), // user
-│ │ │    route("admin/user/:userID", "routes/_public.admin.editUser.tsx"), //user management
-│ │ │    route("admin/course", "routes/_public.admin.course.tsx"), // course
-│ │ │   satisfies RouteConfig;
+│ │ │  export default [
+│ │ │    index("routes/_public._index.tsx"),                // mặc định
+│ │ │    route("admin", "routes/_public.admin.tsx"),        // mặc định
+│ │ │    route("admin/products", "routes/_public.admin.products.tsx"),
+│ │ │    route("admin/products/:productId", "routes/_public.admin.editProduct.tsx"),
+│ │ │    route("admin/posts", "routes/_public.admin.posts.tsx"),
+│ │ │  ] satisfies RouteConfig;
+│ │ │
+│ │ ├── _public.tsx             # Layout chính của Server
+│ │ ├── _public._index.tsx      # Trang chủ (route "/")
+│ │ └── _public/admin           # Route kết nối chính đến Admin
+| │ └── _public/course          # Route kết nối chính đến Course
+| │ └── _public/user            # Route kết nối chính đến User
+| │ └── _public/login, register # Route kết nối Authentication
+| │ └── _public/.../...         # Folder cho từng mục quản lý
+|
 │ │
-│ │ ├── _public.tsx             # Root layout for public routes
-│ │ ├── _public._index.tsx      # Home page ("/")
-│ │ ├── _public/admin/          # Admin routes (product, post management)
-│ │ ├── _public/course/         # Course-related routes
-│ │ ├── _public/user/           # User profile, dashboard routes
-│ │ ├── _public/login/          # Authentication (login, register) routes
-│ │ └── _public/.../...         # Other nested modules
-│
-│ ├── services/                 # Server-only logic (backend handlers)
-│ │ ├── supabase.server.ts      # Supabase (Online PostgreSQL) client config
-│ │ ├── auth.server.ts          # Authentication (login, register, session)
-│ │ └── user.server.ts          # User-related database operations
-│ │
-│ ├── types/                    # Global TypeScript interfaces/models
+│ ├── services/                 # (Backend) Nơi chứa logic xử lý server-side
+│ │ ├── supabase.server.ts      # Cài đặt kết nối Supabase
+│ │ ├── auth.server.ts          # Logic đăng nhập, đăng ký, session...
+│ │ └── user.server.ts          # Logic quản lý CSDL cho user
+| │
+| ├── types/                    # Định nghĩa các Interface dùng chung
 │ │ ├── index.ts
-│ │ └── user.ts
+│ │ ├── user.ts
 │ │
-│ ├── styles/                   # CSS styles (global + module)
-│ │ ├── app.css
-│ │ └── button.module.css
-│ │
-│ ├── routes.ts                 # App-level routing configuration
-│ └── root.tsx                  # Global root layout (entry point)
+│ │── styles/                   # Thiết kế CSS
+| │ ├── app.css
+│ │ ├── button.modules.css
+| │
+│ │── routes.ts                 # File chứa đường dẫn chung cho toàn bộ server
+│ └── root.tsx                  # File layout GỐC của toàn bộ ứng dụng
 │
-├── public/                     # Static files served to browser
+├── public/                     # (Frontend) File tĩnh (images, fonts, favicon.ico)
 │ └── favicon.ico
 │
-├── .env                        # Environment variables containing API keys (DO NOT commit)
-├── .env.example                # Sample env variables
-├── .gitignore
-├── package.json                # Dependencies + scripts
-├── README.md                   # Project documentation
-├── tsconfig.json               # TypeScript configuration
-├── vite.config.ts              # Vite bundler config
-├── yarnrc.yml
-└── eslint.config.js            # Linting rules
+├── .env # (Bảo mật) Chứa API keys - KHÔNG commit lên Git
+├── .env.example # (An toàn) File mẫu cho .env - Commit lên Git
+├── .gitignore # Rất quan trọng: Bỏ qua .env, node_modules...
+├── package.json # Quản lý các gói (dependencies) và scripts
+├── README.md # Hướng dẫn cho nhóm: cách cài đặt, khởi chạy...
+├── tsconfig.json # Cấu hình TypeScript
+└── vite.config.ts # Cấu hình Vite
+└── .pnp.cjs # Yarn
+└── .pnp.loader.mjs
+└── yarnrc.yml
+└── eslint.config.js #
 ```

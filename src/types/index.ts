@@ -1,1 +1,2 @@
-export type { MetaFunction } from "@remix-run/node";
+export default {};
+export type { Route } from "@remix-run/node";

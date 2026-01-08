@@ -4,20 +4,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  LiveReload,
 } from "@remix-run/react";
-import type { LinksFunction } from "@remix-run/node";
-import styles from "./styles/app.css?url";
-
-export const links: LinksFunction = () => [
-  { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-  { rel: "stylesheet", href: styles },
-];
-
-import "./tailwind.css";
+import "~/styles/app.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -28,32 +21,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <LiveReload />
       </body>
     </html>
   );
 }
 
-export default function Root() {
+export default function App() {
   return <Outlet />;
-}
-
-export function ErrorBoundary() {
-  return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Error!</title>
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <div style={{ padding: "2rem", textAlign: "center" }}>
-          <h1>Oops! Something went wrong</h1>
-          <p>Please try again later.</p>
-        </div>
-        <Scripts />
-      </body>
-    </html>
-  );
 }

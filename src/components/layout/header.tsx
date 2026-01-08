@@ -29,12 +29,10 @@ export function Header({
 
   const headerStyle: React.CSSProperties = {
     backgroundColor: "#2c7a7b",
-    backgroundColor: "#2c7a7b",
     padding: "1rem 2rem",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    color: "white",
     color: "white",
   };
 
@@ -43,20 +41,10 @@ export function Header({
     fontWeight: "bold",
     textDecoration: "none",
     color: "white",
-    color: "white",
   };
 
   const navStyle: React.CSSProperties = {
     display: "flex",
-    gap: "2rem",
-    alignItems: "center",
-  };
-
-  const navLinkStyle: React.CSSProperties = {
-    color: "white",
-    textDecoration: "none",
-    fontSize: "1rem",
-    padding: "0.25rem 0",
     gap: "2rem",
     alignItems: "center",
   };
