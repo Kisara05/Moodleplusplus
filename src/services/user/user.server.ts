@@ -35,3 +35,15 @@ export async function getRoleandID(userId: string) {
   }
   return { role, id: null };
 }
+
+export async function getName(userId: string) {
+  console.log("User Service: Getting role and ID for", userId);
+  const { data, error } = await supabase
+    .from('users')
+    .select('full_name')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  console.log("Full name:", data.full_name);
+  return data.full_name;
+}
