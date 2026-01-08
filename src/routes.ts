@@ -15,10 +15,10 @@ export const routesConfig = {
       { path: "courses/:courseID", file: "routes/_public/course/$courseID.tsx" },
       { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
       { path: "logout", file: "routes/_public/login/logout.tsx" },
-      {
-        path: "threads/:threadID",
-        file: "routes/_public/threads/$threadID.tsx",
-      }
+      // {
+      //   path: "threads/:threadID",
+      //   file: "routes/_public/threads/$threadID.tsx",
+      // }
     ],
   },
 
