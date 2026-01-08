@@ -1,11 +1,26 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { getPost, getPostInfo, getThreads, createDiscussionThread } from "~/services/post.server";
+import { getUserById } from "~/services/auth/auth.server";
+import { getUserId } from "~/services/auth/session.server";
+import { Header } from "~/components/layout/header";
+import { Footer } from "~/components/layout/footer";
 import { Form, useNavigation } from "@remix-run/react";
 import { useState } from "react";
+import * as React from "react";
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  // Get user from session
+  const userId = await getUserId(request);
+  if (!userId) {
+    return redirect("/login");
+  }
+
+  const user = await getUserById(userId);
+  if (!user) {
+    return redirect("/login");
+  }
 
   const postId = params.postID; // Note: case sensitive, matches filename $postID
 
@@ -27,7 +42,19 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   const threads = await getThreads(postId);
 
-  return { post, content: content.htmlContent, threads: threads };
+  const url = new URL(request.url);
+  const language = (url.searchParams.get("lang") as "en" | "vi") || "en";
+  const user_flag = user.role === "student" ? 1 : 0;
+
+  return json({ 
+    post, 
+    content: content.htmlContent, 
+    threads: threads,
+    user,
+    user_flag,
+    language,
+    userId: user.id,
+  });
 }
 
 export async function action({ request, params }: LoaderFunctionArgs) {
@@ -48,148 +75,381 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 }
 
 export default function PostViewer() {
-  const { post, content, threads } = useLoaderData<typeof loader>();
+  const { post, content, threads, user, user_flag, language, userId } = useLoaderData<typeof loader>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentLanguage, setCurrentLanguage] = React.useState<"en" | "vi">(language);
+  
   // State to toggle the "New Discussion" form
   const [isCreating, setIsCreating] = useState(false);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  
+  const isStudent = user.role === "student";
+  
+  const toggleLanguage = () => {
+    const newLang = currentLanguage === "en" ? "vi" : "en";
+    setCurrentLanguage(newLang);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("lang", newLang);
+    setSearchParams(newParams);
+  };
+
+  const containerStyle: React.CSSProperties = {
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: "#FFFFFF",
+  };
+
+  const mainStyle: React.CSSProperties = {
+    flex: 1,
+    padding: "2rem",
+    maxWidth: "1200px",
+    width: "100%",
+    margin: "0 auto",
+  };
+
+  const buttonContainerStyle: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "2rem",
+    paddingBottom: "1rem",
+    borderBottom: "1px solid #e0e0e0",
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    padding: "0.75rem 1.5rem",
+    fontSize: "1rem",
+    fontWeight: "500",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    transition: "all 0.2s",
+  };
+
+  const backButtonStyle: React.CSSProperties = {
+    ...buttonStyle,
+    backgroundColor: "#2c7a7b",
+    color: "white",
+  };
+
+  const editButtonStyle: React.CSSProperties = {
+    ...buttonStyle,
+    backgroundColor: "#2C8B85",
+    color: "white",
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: "2.5rem",
+    fontWeight: "bold",
+    color: "#0A853F",
+    marginBottom: "2rem",
+  };
+
+  const contentStyle: React.CSSProperties = {
+    color: "#333",
+    lineHeight: "1.8",
+    marginBottom: "3rem",
+  };
+
   if (post.post_type !== 'discussion') 
 
   return (
-    <div className="p-8">
-      {/* Navigation Header */}
-      <div className="mb-6 pb-4 border-b border-gray-100 flex justify-between items-center">
-        <Link 
-          to={`/courses/${post.section_id}`}
-          className="text-sm font-medium text-gray-500 hover:text-blue-600 transition flex items-center gap-1"
-        >
-          ← Back to Course
-        </Link>
-      </div>
-
-      {/* The Post Title (From DB) */}
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        {post.title}
-      </h1>
-
-      {/* The Post Content (From Storage) */}
-      {/* 'prose' class comes from @tailwindcss/typography plugin. 
-          If you don't have it, the text might look unstyled. */}
-      <div 
-        className="prose prose-blue max-w-none text-gray-800 leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: content }} 
+    <div style={containerStyle}>
+      <Header
+        signed_in={true}
+        user_flag={user_flag}
+        language={currentLanguage}
+        onLanguageChange={toggleLanguage}
+        userId={userId}
       />
-      <div className="mb-6 pb-4 border-b border-gray-100 flex justify-between items-center">
-        <Link 
-          to={`/post/${post.post_id}/edit`}
-          className="text-sm font-medium text-gray-500 hover:text-blue-600 transition flex items-center gap-1"
-        >
-          Edit Post ✏️
-        </Link>
-      </div>
+      <main style={mainStyle}>
+        {/* Navigation Buttons */}
+        <div style={buttonContainerStyle}>
+          <Link 
+            to={`/courses/${post.section_id}`}
+            style={backButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#236b6d";
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#2c7a7b";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            ← Back to Course
+          </Link>
+          {!isStudent && (
+            <Link 
+              to={`/post/${post.post_id}/edit`}
+              style={editButtonStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#247a74";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#2C8B85";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              Edit Post ✏️
+            </Link>
+          )}
+        </div>
+
+        {/* The Post Title (From DB) */}
+        <h1 style={titleStyle}>
+          {post.title}
+        </h1>
+
+        {/* The Post Content (From Storage) */}
+        <div 
+          style={contentStyle}
+          dangerouslySetInnerHTML={{ __html: content }} 
+        />
+      </main>
+      <Footer language={currentLanguage} />
     </div>
   );
 
   //view for discussion posts
-return (
-    <div className="p-8">
-      {/* Navigation Header */}
-      <div className="mb-6 pb-4 border-b border-gray-100 flex justify-between items-center">
-        <Link 
-          to={`/courses/${post.section_id}`}
-          className="text-sm font-medium text-gray-500 hover:text-blue-600 transition flex items-center gap-1"
-        >
-          ← Back to Course
-        </Link>
-      </div>
-
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">{post.title}</h1>
-
-      <div 
-        className="prose prose-blue max-w-none text-gray-800 leading-relaxed mb-12"
-        dangerouslySetInnerHTML={{ __html: content }} 
+  return (
+    <div style={containerStyle}>
+      <Header
+        signed_in={true}
+        user_flag={user_flag}
+        language={currentLanguage}
+        onLanguageChange={toggleLanguage}
+        userId={userId}
       />
-
-      {/* --- DISCUSSION SECTION --- */}
-      <div>
-        {/* Header + New Button */}
-        <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-2">
-            <h2 className="text-xl font-bold text-gray-800">Discussions</h2>
-            <button
-                onClick={() => setIsCreating(!isCreating)}
-                className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition shadow-sm"
+      <main style={mainStyle}>
+        {/* Navigation Buttons */}
+        <div style={buttonContainerStyle}>
+          <Link 
+            to={`/courses/${post.section_id}`}
+            style={backButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#236b6d";
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#2c7a7b";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            ← Back to Course
+          </Link>
+          {!isStudent && (
+            <Link 
+              to={`/post/${post.post_id}/edit`}
+              style={editButtonStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#247a74";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#2C8B85";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
             >
-                {isCreating ? "Cancel" : "+ New Discussion"}
-            </button>
+              Edit Post ✏️
+            </Link>
+          )}
         </div>
 
-        {/* The Creation Form (Visible only when clicking button) */}
-        {isCreating && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8 animate-in fade-in slide-in-from-top-2">
-                <h3 className="font-bold text-gray-700 mb-4">Start a new topic</h3>
-                <Form method="post" onSubmit={() => setIsCreating(false)}>
-                    <div className="mb-4">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
-                        <input 
-                            name="title" 
-                            type="text" 
-                            required 
-                            placeholder="What is this discussion about?"
-                            className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">First Message</label>
-                        <textarea 
-                            name="message" 
-                            required 
-                            rows={3}
-                            placeholder="Type your question or thought here..."
-                            className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
-                        />
-                    </div>
-                    <div className="flex justify-end">
-                        <button 
-                            type="submit" 
-                            disabled={isSubmitting}
-                            className="bg-green-600 text-white text-sm px-6 py-2 rounded font-medium hover:bg-green-700 transition"
-                        >
-                            {isSubmitting ? "Creating..." : "Create Discussion"}
-                        </button>
-                    </div>
-                </Form>
+        <h1 style={titleStyle}>{post.title}</h1>
+
+        <div 
+          style={contentStyle}
+          dangerouslySetInnerHTML={{ __html: content }} 
+        />
+
+        {/* --- DISCUSSION SECTION --- */}
+        <div>
+          {/* Header + New Button */}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1.5rem",
+            paddingBottom: "0.5rem",
+            borderBottom: "1px solid #e0e0e0",
+          }}>
+            <h2 style={{
+              fontSize: "1.5rem",
+              fontWeight: "bold",
+              color: "#333",
+            }}>Discussions</h2>
+            <button
+              onClick={() => setIsCreating(!isCreating)}
+              style={{
+                backgroundColor: "#2c7a7b",
+                color: "white",
+                fontSize: "0.875rem",
+                padding: "0.5rem 1rem",
+                borderRadius: "6px",
+                fontWeight: "500",
+                border: "none",
+                cursor: "pointer",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#236b6d";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#2c7a7b";
+              }}
+            >
+              {isCreating ? "Cancel" : "+ New Discussion"}
+            </button>
+          </div>
+
+          {/* The Creation Form (Visible only when clicking button) */}
+          {isCreating && (
+            <div style={{
+              backgroundColor: "#f9f9f9",
+              border: "1px solid #e0e0e0",
+              borderRadius: "8px",
+              padding: "1.5rem",
+              marginBottom: "2rem",
+            }}>
+              <h3 style={{
+                fontWeight: "bold",
+                color: "#333",
+                marginBottom: "1rem",
+              }}>Start a new topic</h3>
+              <Form method="post" onSubmit={() => setIsCreating(false)}>
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    fontWeight: "bold",
+                    color: "#666",
+                    textTransform: "uppercase",
+                    marginBottom: "0.25rem",
+                  }}>Title</label>
+                  <input 
+                    name="title" 
+                    type="text" 
+                    required 
+                    placeholder="What is this discussion about?"
+                    style={{
+                      width: "100%",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      padding: "0.5rem",
+                      fontSize: "0.875rem",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    fontWeight: "bold",
+                    color: "#666",
+                    textTransform: "uppercase",
+                    marginBottom: "0.25rem",
+                  }}>First Message</label>
+                  <textarea 
+                    name="message" 
+                    required 
+                    rows={3}
+                    placeholder="Type your question or thought here..."
+                    style={{
+                      width: "100%",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      padding: "0.5rem",
+                      fontSize: "0.875rem",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    style={{
+                      backgroundColor: "#0A853F",
+                      color: "white",
+                      fontSize: "0.875rem",
+                      padding: "0.5rem 1.5rem",
+                      borderRadius: "4px",
+                      fontWeight: "500",
+                      border: "none",
+                      cursor: isSubmitting ? "not-allowed" : "pointer",
+                      opacity: isSubmitting ? 0.6 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSubmitting) {
+                        e.currentTarget.style.backgroundColor = "#086d32";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#0A853F";
+                    }}
+                  >
+                    {isSubmitting ? "Creating..." : "Create Discussion"}
+                  </button>
+                </div>
+              </Form>
             </div>
-        )}
+          )}
 
-        {/* Existing Threads List */}
-        {threads.length > 0 ? (
-          <ul className="space-y-3">
-            {threads.map((thread) => (
-              <li key={thread.thread_id} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition shadow-sm">
-                <Link to={`/threads/${thread.thread_id}`} className="block group">
-                  <h4 className="font-bold text-gray-800 group-hover:text-blue-600 transition mb-1">
-                    {thread.title}
-                  </h4>
-                  <div className="text-xs text-gray-400">
-                     View discussion &rarr;
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-            <p className="text-gray-400 italic text-sm">No discussions yet. Be the first to start one!</p>
-        )}
-      </div>
-
-      <div className="mt-12 mb-6 pt-4 border-t border-gray-100">
-        <Link 
-          to={`/post/${post.post_id}/edit`}
-          className="text-sm font-medium text-gray-500 hover:text-blue-600 transition flex items-center gap-1"
-        >
-          Edit Post ✏️
-        </Link>
-      </div>
+          {/* Existing Threads List */}
+          {threads.length > 0 ? (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {threads.map((thread) => (
+                <li key={thread.thread_id} style={{
+                  backgroundColor: "white",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  marginBottom: "0.75rem",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                }}>
+                  <Link 
+                    to={`/threads/${thread.thread_id}`} 
+                    style={{
+                      display: "block",
+                      textDecoration: "none",
+                      color: "inherit",
+                    }}
+                  >
+                    <h4 style={{
+                      fontWeight: "bold",
+                      color: "#333",
+                      marginBottom: "0.25rem",
+                    }}>
+                      {thread.title}
+                    </h4>
+                    <div style={{
+                      fontSize: "0.75rem",
+                      color: "#999",
+                    }}>
+                      View discussion →
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{
+              color: "#999",
+              fontStyle: "italic",
+              fontSize: "0.875rem",
+            }}>No discussions yet. Be the first to start one!</p>
+          )}
+        </div>
+      </main>
+      <Footer language={currentLanguage} />
     </div>
   );
 }
