@@ -6,7 +6,6 @@ import { Form, useNavigation } from "@remix-run/react";
 import { useState } from "react";
 import { redirect } from "react-router-dom";
 import { getUserId } from "~/services/auth/session.server";
-import { getName } from "~/services/user/user.server";
 
 export async function loader({ params }: LoaderFunctionArgs) {
     const threadID = params.threadID;
@@ -51,6 +50,17 @@ function CommentView({ comment }: { comment: any }) {
   // Check if we are currently submitting a reply to *this* specific comment
   const isSubmitting = navigation.state === "submitting" && navigation.formData?.get("parentId") === String(comment.discussion_id);
 
+  // --- CHANGED LOGIC HERE ---
+  // 1. We try to grab the name from the "Joined" table (users.full_name)
+  // 2. If that fails (or is missing), we fallback to "Unknown"
+  // Note: Supabase usually returns the relation as an object or an array depending on your FK setup.
+  const authorProfile = Array.isArray(comment.users) ? comment.users[0] : comment.users;
+  const authorName = authorProfile?.full_name || "Unknown Student";
+  
+  // Optional: Grab the ID for fallback display
+  const authorId = comment.author || comment.user_id; 
+  // --------------------------
+
   return (
     <div className="mb-4">
       {/* 1. THE COMMENT BOX */}
@@ -60,11 +70,17 @@ function CommentView({ comment }: { comment: any }) {
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
-                U
+                {authorName.charAt(0).toUpperCase()}
             </div>
-            <span className="text-xs font-bold text-gray-700">
-                {`${getName(comment.user_id)}` || "User Anon"}
-            </span>
+            
+            <div className="flex flex-col">
+                {/* Render the Safe Name */}
+                <span className="text-xs font-bold text-gray-700">
+                    {authorName}
+                </span>
+                {/* Optional: Show ID in tiny text for debugging/admin */}
+                {/* <span className="text-[10px] text-gray-400">{authorId}</span> */}
+            </div>
           </div>
           <span className="text-xs text-gray-400">
             {new Date(comment.created_at).toLocaleDateString()}
@@ -89,14 +105,13 @@ function CommentView({ comment }: { comment: any }) {
         {/* 2. THE REPLY FORM (Only shows when isReplying is true) */}
         {isReplying && (
           <Form method="post" onSubmit={() => setIsReplying(false)} className="mt-3">
-            {/* HIDDEN INPUT: This tells the server who the parent is */}
             <input type="hidden" name="parentId" value={comment.discussion_id} />
             
             <textarea 
               name="content"
               autoFocus
               required
-              placeholder={`Replying to User ${comment.user_id?.slice(0,4)}...`}
+              placeholder={`Replying to ${authorName}...`}
               className="w-full text-sm p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-100 outline-none mb-2"
               rows={2}
             />

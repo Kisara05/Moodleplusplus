@@ -59,13 +59,19 @@ export async function insertComment(authorID: string, content: string, parentId:
 }
 
 export async function getComments(threadId: string) {
-  // A. Fetch the flat list (Efficient DB query)
-  // Note: I changed table name to 'discussion' matching your screenshot
   const { data, error } = await supabase
-    .from("discussion") 
-    .select("*")
+    .from("discussion")
+    .select(`
+      *,
+      users (
+        full_name
+      )
+    `) 
+    // ^ MAGICAL CHANGE: This tells Supabase: 
+    // "Look at the Foreign Key (author/user_id), go to the 'users' table, 
+    // and grab the 'full_name' for me right now."
     .eq("thread_id", threadId)
-    .order("created_at", { ascending: true }); // Ensures replies appear in chronological order
+    .order("created_at", { ascending: true });
 
   if (error) {
     console.error("Error fetching comments:", error);

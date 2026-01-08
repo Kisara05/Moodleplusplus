@@ -221,7 +221,7 @@ export function Header({
         </Link>
         {user_flag === 1 && (
           <Link 
-            to={`/course-registration?signed_in=1&user_flag=${user_flag}&userId=${userId}`}  
+            to={`/course-registration`}  
             style={isCourseRegistration ? activeNavLinkStyle : navLinkStyle}>
             {language === "en" ? "Course registration" : "Đăng kí học phần"}
           </Link>
