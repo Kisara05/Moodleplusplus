@@ -31,7 +31,7 @@ export default function AuthLayout() {
 
   return (
     <div>
-      <header className="bg-white shadow">
+      {/* <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">LMS Platform</h1>
           <div className="flex items-center gap-4">
@@ -46,11 +46,9 @@ export default function AuthLayout() {
             </Form>
           </div>
         </div>
-      </header>
+      </header> */}
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <Outlet />
-      </main>
+      <Outlet />
     </div>
   );
 }

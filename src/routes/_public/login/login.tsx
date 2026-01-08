@@ -74,14 +74,6 @@ export async function action({ request }: ActionFunctionArgs) {
   const user = result.user;
   let redirectTo = "/dashboard";
 
-  if (user.role === "admin") {
-    redirectTo = "/admin/dashboard";
-  } else if (user.role === "teacher") {
-    redirectTo = "/teacher/dashboard";
-  } else {
-    redirectTo = "/student/dashboard";
-  }
-
   // Create session + redirect
   return createUserSession(user.id, redirectTo);
 }

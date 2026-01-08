@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Link, useNavigate, useLocation } from "@remix-run/react";
+import { Link, useNavigate, useLocation, Form, useRouteLoaderData } from "@remix-run/react";
+import type { AuthUser } from "~/types/models/user";
 
 type HeaderProps = {
   signed_in?: boolean;
@@ -28,6 +29,11 @@ export function Header({
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [showMessages, setShowMessages] = React.useState(false);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
+
+  // Get user data when signed in (safely get from route loader)
+  type AuthLayoutData = { user: AuthUser };
+  const authData = useRouteLoaderData<AuthLayoutData>("routes/_auth/_layout");
+  const user = signed_in && authData ? authData.user : null;
 
   /* =========================
      SHARED STYLES (RECTANGULAR)
@@ -356,21 +362,33 @@ export function Header({
               >
                 {language === "en" ? "Tiếng Việt" : "English"}
               </div>
-              <div
-                style={dropdownItemStyle}
-                onClick={() => {
-                  navigate("/login");
-                  setShowUserMenu(false);
-                }}
-              >
-                {language === "en" ? "Logout" : "Đăng xuất"}
-              </div>
+              <Link to="/logout">
+                <button
+                  type="submit"
+                  style={{
+                    ...dropdownItemStyle,
+                    width: "100%",
+                    textAlign: "left",
+                    border: "none",
+                    backgroundColor: "transparent",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowUserMenu(false);
+                  }}
+                >
+                  {language === "en" ? "Logout" : "Đăng xuất"}
+                </button>
+              </Link>
             </div>
           )}
         </div>
 
         <div
-          style={{ ...iconStyle }}
+          style={{ 
+            position: "relative",
+            cursor: "pointer",
+          }}
           onClick={() => {
             setShowUserMenu(!showUserMenu);
             setShowHelp(false);
@@ -378,16 +396,16 @@ export function Header({
             setShowMessages(false);
           }}
         >
-          <img 
-            src="/icons/chevron-down.png" 
-            alt="Menu" 
-            style={iconImageStyle}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              const parent = e.currentTarget.parentElement;
-              if (parent) parent.textContent = "▼";
-            }}
-          />
+          <span style={{
+            color: "white",
+            fontSize: "1rem",
+            padding: "0.5rem 1rem",
+            borderRadius: "25px",
+            backgroundColor: "rgba(255, 255, 255, 0.2)",
+            border: "2px solid #FFFFFF",
+          }}>
+            {user?.full_name || "User"}
+          </span>
         </div>
       </div>
     </header>
