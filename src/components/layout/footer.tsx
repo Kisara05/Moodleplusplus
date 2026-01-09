@@ -77,11 +77,11 @@ export function Footer({ language = "en" }: FooterProps) {
           <a href="mailto:vietthanh2005@gmail.com" style={emailStyle}>
             vietthanh2005@gmail.com
           </a>
-          <a href="mailto:vietthanh2005@gmail.com" style={emailStyle}>
-            vietthanh2005@gmail.com
+          <a href="mailto:madguyinthehouse@gmail.com" style={emailStyle}>
+            madguyinthehouse@gmail.com
           </a>
-          <a href="mailto:tvutrabaja@gmail.com" style={emailStyle}>
-            tvutrabaja@gmail.com
+          <a href="mailto:hoangdonthienhoa@gmail.com" style={emailStyle}>
+            hoangdonthienhoa@gmail.com
           </a>
         </div>
       </footer>
