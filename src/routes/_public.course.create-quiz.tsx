@@ -118,8 +118,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const uploadFileFlag = selectFiles === "yes" ? 1 : 0;
 
   if (answerFlag === 0) {
-    // Free response - return to main screen
-    return redirect(`/?signed_in=1&user_flag=0`);
+    // Free response - return to course page
+    return redirect(`/courses/${sectionId}?signed_in=1&user_flag=0`);
   } else {
     // Multiple choice
     if (uploadFileFlag === 0) {

@@ -55,6 +55,10 @@ export default [
         path: "courses/:courseID/take-quiz-free-response", 
         file: "src/routes/_public.course.take-quiz-free-response.tsx" 
       },
+      { 
+        path: "courses/:courseID/assignment/:assignmentID", 
+        file: "src/routes/_public.course.assignment.$assignmentID.tsx" 
+      },
       { path: "post", file: "src/routes/_public.post.tsx" },
       { 
         path: "post/:postID", 

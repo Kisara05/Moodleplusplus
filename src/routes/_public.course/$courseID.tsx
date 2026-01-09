@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Link, useLoaderData, useSearchParams, useParams } from "@remix-run/react";
 import { getSectionById } from "~/services/course.server";
 import { getAllPosts } from "~/services/post.server";
 import { Header } from "~/components/layout/header";
@@ -40,6 +40,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 export default function CourseDetail() {
   const { course, posts, user_flag, language, userId } = useLoaderData<typeof loader>();
+  const params = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentLanguage, setCurrentLanguage] = React.useState<"en" | "vi">(language);
   const [showModal, setShowModal] = React.useState(false);
@@ -48,6 +49,9 @@ export default function CourseDetail() {
   
   const tealColor = "#2c7a7b";
   const isTeacher = user_flag === 0;
+  
+  // Get courseID from URL params
+  const courseID = params.courseID || "";
   
   const toggleLanguage = () => {
     const newLang = currentLanguage === "en" ? "vi" : "en";
@@ -516,19 +520,10 @@ export default function CourseDetail() {
               {language === "en" ? "Course" : "Khóa học"}
             </button>
             <button style={tabStyle}>
-              {language === "en" ? "Settings" : "Cài đặt"}
-            </button>
-            <button style={tabStyle}>
               {language === "en" ? "Grades" : "Điểm"}
             </button>
             <button style={tabStyle}>
               {language === "en" ? "Participants" : "Danh sách thành viên"}
-            </button>
-            <button style={tabStyle}>
-              {language === "en" ? "Reports" : "Báo cáo"}
-            </button>
-            <button style={tabStyle}>
-              {language === "en" ? "More" : "Thêm"}
             </button>
           </div>
           <button style={expandAllButtonStyle} onClick={toggleAllSections}>
@@ -654,10 +649,20 @@ export default function CourseDetail() {
               <div style={activityIconStyle}>💬</div>
               <div style={activityLabelStyle}>Forum</div>
             </button>
-            <button style={activityButtonStyle} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-              <div style={activityIconStyle}>☑</div>
-              <div style={activityLabelStyle}>Quiz</div>
-            </button>
+            <Link
+              to={`/courses/${courseID}/create-quiz?signed_in=1&user_flag=0`}
+              style={{ textDecoration: "none", color: "inherit", display: "block", width: "100%" }}
+            >
+              <button 
+                style={{ ...activityButtonStyle, width: "100%" }} 
+                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} 
+                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                onClick={() => setShowModal(false)}
+              >
+                <div style={activityIconStyle}>☑</div>
+                <div style={activityLabelStyle}>Quiz</div>
+              </button>
+            </Link>
             <button style={activityButtonStyle} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
               <div style={activityIconStyle}>🌐</div>
               <div style={activityLabelStyle}>URL</div>
