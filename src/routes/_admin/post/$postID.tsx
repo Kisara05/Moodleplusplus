@@ -4,6 +4,7 @@ import { useLoaderData, Link } from "@remix-run/react";
 import { getPost, getPostInfo, getThreads, createDiscussionThread } from "~/services/post.server";
 import { Form, useNavigation } from "@remix-run/react";
 import { useState } from "react";
+import { getUserId } from "~/services/auth/session.server";
 
 export async function loader({ params }: LoaderFunctionArgs) {
 
@@ -33,14 +34,15 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export async function action({ request, params }: LoaderFunctionArgs) {
   const postId = params.postID;
   const formData = await request.formData();
-
+  const userId = await getUserId(request);
+  if (!userId) return redirect("/login");
   const title = formData.get("title") as string;
   const message = formData.get("message") as string;
   if (!postId || !title || !message) {
     throw new Response("Invalid Form Data", { status: 400 });
     return null;
   }
-  const error = await createDiscussionThread(postId, title, message);
+  const error = await createDiscussionThread(userId, postId, title, message);
   if (error) {
     throw new Response("Error creating discussion thread", { status: 500 });
   }

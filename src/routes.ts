@@ -11,6 +11,7 @@ export const routesConfig = {
     routes: [
       { path: "", file: "routes/_public/index.tsx", index: true },
       { path: "login", file: "routes/_public/login/login.tsx" },
+<<<<<<< HEAD
       { path: "courses", file: "routes/_public/course/index.tsx" },
       {
         path: "forget-password",
@@ -22,6 +23,11 @@ export const routesConfig = {
         file: "routes/_public/course/$courseID.tsx",
       },
       { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
+=======
+      // { path: "courses", file: "routes/_public/course/index.tsx" },
+      // { path: "courses/:courseID", file: "routes/_public/course/$courseID.tsx" },
+      // { path: "post/:postID", file: "routes/_public/post/$postID.tsx" },
+>>>>>>> aa59c9f7498151f84e9e475b537fe6b193e5d963
       { path: "logout", file: "routes/_public/login/logout.tsx" },
       // {
       //   path: "threads/:threadID",
@@ -40,6 +46,7 @@ export const routesConfig = {
         path: "courses/:courseID",
         file: "routes/_auth/courses/$courseID/index.tsx",
       },
+      { path: "post/:postID", file: "routes/_auth/post/$postID.tsx" },
       {
         path: "teaching/:courseID",
         file: "routes/_auth/teaching/index.tsx",

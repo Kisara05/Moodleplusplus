@@ -25,12 +25,13 @@ export async function getRoleandID(userId: string) {
     return { role, id: roleData.student_id};
   }
   if (role === 'teacher') {
+    console.log("Fetching instructor ID for user:", userId);
     const { data: roleData, error: roleError } = await supabase
       .from('instructor')
       .select('instructor_id')
       .eq('userID', userId)
       .single();
-    if (roleError) throw roleError;
+    if (roleError)throw roleError;
     return { role, id: roleData.instructor_id };
   }
   return { role, id: null };

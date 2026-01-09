@@ -1,63 +1,169 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import { json } from "@remix-run/node";
+import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
+import { useState } from "react";
 import { getUserId } from "~/services/auth/session.server";
 import { getSectionList } from "~/services/course.server";
+import { Header } from "~/components/layout/header";
+import { Footer } from "~/components/layout/footer";
 
+/* =======================
+   Loader (BACKEND – unchanged logic)
+======================= */
 export async function loader({ request }: LoaderFunctionArgs) {
   const userId = await getUserId(request);
-  console.log("User ID in loader:", userId);
+  const url = new URL(request.url);
+
+  const signed_in = true; // userId exists if this loader runs
+  const user_flag = parseInt(url.searchParams.get("user_flag") || "1");
+  const language = (url.searchParams.get("lang") as "en" | "vi") || "en";
+
   const data = await getSectionList(userId!);
+
   const flatSections = data.map((item: any) => ({
     section_id: item.section_id,
     course_id: Array.isArray(item.course)
       ? item.course[0]?.course_id
       : item.course?.course_id,
-    // Safely pull the name up to the top level
     course_name: Array.isArray(item.course)
       ? item.course[0]?.course_name
-      : item.course?.course_name
+      : item.course?.course_name,
   }));
-  console.log("Flat sections:", flatSections);
-  // Return the clean, flat list
-  return { sections: flatSections };
+
+  return json({
+    courses: flatSections,
+    signed_in,
+    user_flag,
+    language,
+    userId,
+  });
 }
 
-export default function CoursesPage() {
-  const { sections } = useLoaderData<typeof loader>();
-  // Mock data - sau này sẽ fetch từ database
-  // const courses = sections;
+/* =======================
+   UI
+======================= */
+export default function MyCoursesPage() {
+  const { courses, signed_in, user_flag, language, userId } =
+    useLoaderData<typeof loader>();
 
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
+
+  const toggleLanguage = () => {
+    const newLang = currentLanguage === "en" ? "vi" : "en";
+    setCurrentLanguage(newLang);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("lang", newLang);
+    setSearchParams(newParams);
+  };
+
+  const handleCourseClick = (sectionId: string) => {
+    navigate(`/courses/${sectionId}?user_flag=${user_flag}`);
+  };
+
+  /* =======================
+     Styles
+  ======================= */
+  const containerStyle: React.CSSProperties = {
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: "#FFFFFF",
+  };
+
+  const mainStyle: React.CSSProperties = {
+    flex: 1,
+    padding: "2rem",
+  };
+
+  const sectionTitleStyle: React.CSSProperties = {
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    color: "#000000",
+    marginBottom: "1.5rem",
+  };
+
+  const coursesListStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+  };
+
+  const courseCardStyle: React.CSSProperties = {
+    backgroundColor: "#D9D9D9",
+    borderRadius: "25px",
+    padding: "1.5rem",
+    cursor: "pointer",
+    transition: "transform 0.2s, box-shadow 0.2s",
+    width: "100%",
+  };
+
+  const courseNameStyle: React.CSSProperties = {
+    fontSize: "1.1rem",
+    fontWeight: "bold",
+    color: "#000000",
+  };
+
+  const emptyStyle: React.CSSProperties = {
+    fontSize: "1rem",
+    color: "#565656",
+    marginTop: "1rem",
+  };
+
+  /* =======================
+     Render
+  ======================= */
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-4xl font-bold mb-8">Available Courses</h1>
+    <div style={containerStyle}>
+      <Header
+        signed_in={signed_in}
+        user_flag={user_flag}
+        language={currentLanguage}
+        onLanguageChange={toggleLanguage}
+        userId={userId}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sections.map((course) => (
-          <Link
-            key={course.section_id}
-            to={`/courses/${course.section_id}`}
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
-          >
-            {/* <img
-              src={course.thumbnail}
-              alt={course.title}
-              className="w-full h-48 object-cover"
-            /> */}
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-2">{course.course_name}</h3>
-              {/* <p className="text-gray-600 mb-4">{course.description}</p> */}
-              <div className="flex justify-between items-center">
-                {/* <span className="text-2xl font-bold text-blue-600">
-                  ${course.price}
-                </span> */}
-                <span className="text-blue-600 hover:text-blue-700">
-                  View Details →
-                </span>
+      <main style={mainStyle}>
+        <h2 style={sectionTitleStyle}>
+          {currentLanguage === "en"
+            ? "My Courses"
+            : "Khóa học của tôi"}
+        </h2>
+
+        {courses.length === 0 ? (
+          <p style={emptyStyle}>
+            {currentLanguage === "en"
+              ? "You have enrolled in no courses."
+              : "Bạn chưa đăng ký khóa học nào."}
+          </p>
+        ) : (
+          <div style={coursesListStyle}>
+            {courses.map((course) => (
+              <div
+                key={course.section_id}
+                style={courseCardStyle}
+                onClick={() => handleCourseClick(course.section_id)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 12px rgba(0, 0, 0, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <div style={courseNameStyle}>
+                  {course.course_name}
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <Footer language={currentLanguage} />
     </div>
   );
 }

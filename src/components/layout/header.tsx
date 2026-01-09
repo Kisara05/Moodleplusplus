@@ -216,12 +216,12 @@ export function Header({
         <Link to="/dashboard?signed_in=1" style={isDashboard ? activeNavLinkStyle : navLinkStyle}>
           {language === "en" ? "Dashboard" : "Trang tổng quan"}
         </Link>
-        <Link to="/courses" style={isMyCourses ? activeNavLinkStyle : navLinkStyle}>
+        <Link to="/my-courses" style={isMyCourses ? activeNavLinkStyle : navLinkStyle}>
           {language === "en" ? "My courses" : "Khóa học của tôi"}
         </Link>
         {user_flag === 1 && (
           <Link 
-            to={`/course-registration`}  
+            to={`/course-registration?signed_in=1&user_flag=${user_flag}&userId=${userId}`}  
             style={isCourseRegistration ? activeNavLinkStyle : navLinkStyle}>
             {language === "en" ? "Course registration" : "Đăng kí học phần"}
           </Link>
