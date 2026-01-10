@@ -1,111 +1,139 @@
-import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { useLoaderData, useActionData, useNavigate, useSearchParams, Form } from "@remix-run/react";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { Header } from "~/components/layout/header";
 import { Footer } from "~/components/layout/footer";
-import { useState, useEffect } from "react";
-import { getAllEnrollablesforStudent, enroll, getEnrolledOpenSections, unregister } from "~/services/course/enroll.server";
+import { useState } from "react";
+import { 
+  getRegisteredCourses, 
+  getAvailableCourses, 
+  cancelEnrollments, 
+  enrollInCourses 
+} from "~/services/course.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const signed_in = url.searchParams.get("signed_in") === "1";
-  const user_flag = url.searchParams.get("user_flag") || "student";
+  const user_flag = parseInt(url.searchParams.get("user_flag") || "1");
   const language = (url.searchParams.get("lang") as "en" | "vi") || "en";
-  const userId = url.searchParams.get("userId");
+  const userId = url.searchParams.get("userId") || "123"; // TODO: Get from session
 
   // If not signed in, redirect to login
-  if (!signed_in || !userId) {
+  if (!signed_in) {
     throw new Response(null, {
       status: 302,
       headers: { Location: "/login" },
     });
   }
 
+  // Only students can access course registration
+  if (user_flag !== 1) {
+    throw new Response(null, {
+      status: 302,
+      headers: { Location: "/?signed_in=1&user_flag=" + user_flag },
+    });
+  }
+
+  // Get filters from URL
+  const year = url.searchParams.get("year") || "";
+  const semester = url.searchParams.get("semester") || "";
+  const program = url.searchParams.get("program") || "";
+  const searchQuery = url.searchParams.get("search") || "";
+
   try {
-    // Get available courses and enrolled courses
-    const availableSections = await getAllEnrollablesforStudent(userId);
-    const enrolledSections = await getEnrolledOpenSections(userId);
+    // Fetch registered and available courses
+    const registeredCourses = await getRegisteredCourses(userId);
+    const availableCourses = await getAvailableCourses(userId, {
+      year: year || undefined,
+      semester: semester || undefined,
+      program: program || undefined,
+    });
+
+    // Filter by search query if provided
+    let filteredAvailable = availableCourses;
+    if (searchQuery) {
+      filteredAvailable = availableCourses.filter((course: any) => {
+        const courseName = course.course?.course_name || "";
+        const courseId = course.course?.course_id || "";
+        const className = course.class_name || "";
+        return (
+          courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          courseId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          className.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      });
+    }
 
     return json({
       signed_in,
       user_flag,
       language,
       userId,
-      availableSections: availableSections || [],
-      enrolledSections: enrolledSections || [],
+      registeredCourses: registeredCourses || [],
+      availableCourses: filteredAvailable || [],
+      filters: { year, semester, program, search: searchQuery },
     });
   } catch (error) {
-    console.error("Error loading course registration data:", error);
+    console.error("Error loading courses:", error);
     return json({
       signed_in,
       user_flag,
       language,
       userId,
-      availableSections: [],
-      enrolledSections: [],
-      error: "Failed to load courses",
+      registeredCourses: [],
+      availableCourses: [],
+      filters: { year, semester, program, search: searchQuery },
+      error: error instanceof Error ? error.message : "Failed to load courses",
     });
   }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  const action = formData.get("_action");
+  const actionType = formData.get("actionType") as string; // "cancel" or "enroll"
   const userId = formData.get("userId") as string;
-  const sectionIds = formData.get("sectionIds") as string;
+  const sectionIds = formData.getAll("sectionIds") as string[];
 
-  if (!userId || !sectionIds) {
-    return json({ success: false, error: "Missing required fields" }, { status: 400 });
+  if (!userId || !sectionIds || sectionIds.length === 0) {
+    return json({ success: false, error: "No courses selected" });
   }
 
-  const sectionIdArray = sectionIds.split(",").filter(id => id.trim());
-
   try {
-    if (action === "enroll") {
-      // Batch enroll
-      for (const sectionId of sectionIdArray) {
-        await enroll(userId, sectionId);
-      }
-      return json({ success: true, message: `Successfully enrolled in ${sectionIdArray.length} course(s)!` });
-    } else if (action === "unenroll") {
-      // Batch unenroll
-      for (const sectionId of sectionIdArray) {
-        await unregister(userId, sectionId);
-      }
-      return json({ success: true, message: `Successfully unenrolled from ${sectionIdArray.length} course(s)!` });
+    if (actionType === "cancel") {
+      const result = await cancelEnrollments(userId, sectionIds);
+      return json(result);
+    } else if (actionType === "enroll") {
+      const result = await enrollInCourses(userId, sectionIds);
+      return json(result);
+    } else {
+      return json({ success: false, error: "Invalid action type" });
     }
-    return json({ success: false, error: "Invalid action" }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error processing enrollment:", error);
-    return json({ 
-      success: false, 
-      error: error.message || "An error occurred" 
-    }, { status: 500 });
+    return json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to process enrollment",
+    });
   }
 }
 
 export default function CourseRegistration() {
-  const loaderData = useLoaderData<typeof loader>();
-  const { signed_in, user_flag, language, userId, availableSections, enrolledSections } = loaderData;
-  const error = (loaderData as any).error;
+  const {
+    signed_in,
+    user_flag,
+    language,
+    userId,
+    registeredCourses,
+    availableCourses,
+    filters,
+    error: loadError,
+  } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentLanguage, setCurrentLanguage] = useState<"en" | "vi">(language);
-  
-  // State for filters
-  const [schoolYear, setSchoolYear] = useState("2025 - 2026");
-  const [semester, setSemester] = useState("Semester 1");
-  const [program, setProgram] = useState("Advanced Program (APCS)");
-  
-  // State for checkboxes
-  const [selectedToCancel, setSelectedToCancel] = useState<string[]>([]);
-  const [selectedToEnroll, setSelectedToEnroll] = useState<string[]>([]);
-  
-  // State for messages
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  
-  // Determine if semester is open for registration
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [selectedCancel, setSelectedCancel] = useState<Set<string>>(new Set());
+  const [selectedEnroll, setSelectedEnroll] = useState<Set<string>>(new Set());
 
   const toggleLanguage = () => {
     const newLang = currentLanguage === "en" ? "vi" : "en";
@@ -115,394 +143,468 @@ export default function CourseRegistration() {
     setSearchParams(newParams);
   };
 
-  // Handle cancel checkbox toggle
-  const handleCancelToggle = (sectionId: string) => {
-    setSelectedToCancel(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
+  const handleFilterClick = (filterType: string, value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (newParams.get(filterType) === value) {
+      newParams.delete(filterType);
+    } else {
+      newParams.set(filterType, value);
+    }
+    setSearchParams(newParams);
   };
 
-  // Handle enroll checkbox toggle
-  const handleEnrollToggle = (sectionId: string) => {
-    setSelectedToEnroll(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const search = formData.get("search") as string;
+    const newParams = new URLSearchParams(searchParams);
+    if (search) {
+      newParams.set("search", search);
+    } else {
+      newParams.delete("search");
+    }
+    setSearchParams(newParams);
   };
 
-  // Handle cancel confirmation
-  const handleCancelConfirm = async () => {
-    if (selectedToCancel.length === 0) {
-      setMessage({ type: 'error', text: 'No courses were chosen to cancel.' });
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to cancel ${selectedToCancel.length} course(s)?`)) {
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("_action", "unenroll");
-    formData.append("userId", userId);
-    formData.append("sectionIds", selectedToCancel.join(","));
-
-    try {
-      const response = await fetch(window.location.pathname + window.location.search, {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message });
-        setSelectedToCancel([]);
-        setTimeout(() => window.location.reload(), 1500);
+  const handleCheckboxChange = (sectionId: string, type: "cancel" | "enroll") => {
+    if (type === "cancel") {
+      const newSet = new Set(selectedCancel);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
       } else {
-        setMessage({ type: 'error', text: result.error });
+        newSet.add(sectionId);
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to process cancellation' });
-    }
-  };
-
-  // Handle enroll confirmation
-  const handleEnrollConfirm = async () => {
-    if (selectedToEnroll.length === 0) {
-      setMessage({ type: 'error', text: 'No courses were chosen to enroll.' });
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to enroll in ${selectedToEnroll.length} course(s)?`)) {
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("_action", "enroll");
-    formData.append("userId", userId);
-    formData.append("sectionIds", selectedToEnroll.join(","));
-
-    try {
-      const response = await fetch(window.location.pathname + window.location.search, {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message });
-        setSelectedToEnroll([]);
-        setTimeout(() => window.location.reload(), 1500);
+      setSelectedCancel(newSet);
+    } else {
+      const newSet = new Set(selectedEnroll);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
       } else {
-        setMessage({ type: 'error', text: result.error });
+        newSet.add(sectionId);
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to process enrollment' });
+      setSelectedEnroll(newSet);
     }
   };
 
-  // Styles
+  const handleConfirmCancel = () => {
+    if (selectedCancel.size === 0) return;
+    // Form submission will be handled by Remix action
+  };
+
+  const handleConfirmEnroll = () => {
+    if (selectedEnroll.size === 0) return;
+    // Form submission will be handled by Remix action
+  };
+
+  // Redirect on success
+  if (actionData?.success) {
+    // Reload the page to show updated courses
+    window.location.reload();
+  }
+
+  if (!signed_in || user_flag !== 1) {
+    return null;
+  }
+
   const containerStyle: React.CSSProperties = {
     minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
-    backgroundColor: "#f0f4f8",
+    backgroundColor: "#FFFFFF",
   };
 
   const mainStyle: React.CSSProperties = {
     flex: 1,
-    padding: "1.5rem 2rem",
-    maxWidth: "1600px",
-    margin: "0 auto",
-    width: "100%",
+    padding: "2rem",
   };
 
   const filterBarStyle: React.CSSProperties = {
     display: "flex",
-    gap: "1.5rem",
-    marginBottom: "1.5rem",
-    padding: "0.8rem 1rem",
-    backgroundColor: "white",
-    borderRadius: "8px",
-    alignItems: "center",
+    gap: "1rem",
+    marginBottom: "1rem",
+    flexWrap: "wrap",
   };
 
   const filterButtonStyle: React.CSSProperties = {
-    padding: "0.5rem 1.2rem",
-    border: "1px solid #ddd",
-    borderRadius: "6px",
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#D9D9D9",
+    borderRadius: "25px",
+    padding: "0.5rem 1rem",
+    border: "none",
     cursor: "pointer",
     fontSize: "0.9rem",
+    color: "#000000",
     fontWeight: "500",
-    color: "#495057",
+  };
+
+  const activeFilterButtonStyle: React.CSSProperties = {
+    ...filterButtonStyle,
+    backgroundColor: "#2C8B85",
+    color: "#FFFFFF",
+  };
+
+  const searchBarStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "1rem",
+    fontSize: "1rem",
+    border: "2px solid #D9D9D9",
+    borderRadius: "25px",
+    marginBottom: "2rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "1rem",
+  };
+
+  const searchInputStyle: React.CSSProperties = {
+    flex: 1,
+    border: "none",
+    outline: "none",
+    fontSize: "1rem",
+  };
+
+  const sectionStyle: React.CSSProperties = {
+    marginBottom: "3rem",
   };
 
   const sectionTitleStyle: React.CSSProperties = {
-    fontSize: "1.3rem",
-    fontWeight: "600",
-    marginBottom: "0.8rem",
-    color: "#2c6975",
-  };
-
-  const tableContainerStyle: React.CSSProperties = {
-    backgroundColor: "white",
-    borderRadius: "8px",
-    padding: "1rem",
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    color: "#2C8B85",
     marginBottom: "1.5rem",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
   };
 
   const tableStyle: React.CSSProperties = {
     width: "100%",
-    borderCollapse: "collapse",
-    marginBottom: "1rem",
-    tableLayout: "fixed",
+    borderCollapse: "separate",
+    borderSpacing: "0 0.5rem",
   };
 
-  const thStyle: React.CSSProperties = {
-    padding: "0.65rem 0.5rem",
+  const tableHeaderStyle: React.CSSProperties = {
     textAlign: "left",
-    borderBottom: "2px solid #e9ecef",
-    fontWeight: "600",
-    fontSize: "0.85rem",
-    color: "#495057",
-    backgroundColor: "#f8f9fa",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
+    padding: "1rem",
+    color: "#000000",
+    fontWeight: "bold",
+    fontSize: "0.9rem",
   };
 
-  const tdStyle: React.CSSProperties = {
-    padding: "0.65rem 0.5rem",
-    borderBottom: "1px solid #f1f3f5",
-    fontSize: "0.85rem",
-    color: "#495057",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
+  const tableRowStyle: React.CSSProperties = {
+    backgroundColor: "#D9D9D9",
+    borderRadius: "25px",
   };
 
-  const tdCenterStyle: React.CSSProperties = {
-    ...tdStyle,
+  const tableCellStyle: React.CSSProperties = {
+    padding: "1rem",
+    borderRadius: "25px",
+  };
+
+  const checkboxContainerStyle: React.CSSProperties = {
+    width: "24px",
+    height: "24px",
+    borderRadius: "25px",
+    border: "2px solid #565656",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    backgroundColor: "#FFFFFF",
+  };
+
+  const checkboxCheckedStyle: React.CSSProperties = {
+    ...checkboxContainerStyle,
+    backgroundColor: "#2C8B85",
+    borderColor: "#2C8B85",
+  };
+
+  const confirmButtonStyle: React.CSSProperties = {
+    backgroundColor: "#0A853F",
+    color: "#FFFFFF",
+    borderRadius: "25px",
+    padding: "1rem 2rem",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "1rem",
+    fontWeight: "bold",
+    marginTop: "1.5rem",
+    width: "100%",
+    maxWidth: "300px",
+  };
+
+  const errorStyle: React.CSSProperties = {
+    backgroundColor: "#ffebee",
+    color: "#c62828",
+    padding: "1rem",
+    borderRadius: "25px",
+    marginBottom: "1rem",
     textAlign: "center",
   };
 
-  // Column width styles
-  const colCourseIdStyle: React.CSSProperties = { width: "10%" };
-  const colCourseNameStyle: React.CSSProperties = { width: "32%" };
-  const colClassStyle: React.CSSProperties = { width: "12%" };
-  const colCreditsStyle: React.CSSProperties = { width: "8%" };
-  const colScheduleStyle: React.CSSProperties = { width: "15%" };
-  const colRegisteredStyle: React.CSSProperties = { width: "11%" };
-  const colActionStyle: React.CSSProperties = { width: "8%", textAlign: "center" };
-
-  const confirmButtonStyle: React.CSSProperties = {
-    padding: "0.7rem 2.5rem",
-    borderRadius: "6px",
-    border: "none",
-    cursor: "pointer",
-    fontWeight: "600",
-    fontSize: "1rem",
-    backgroundColor: "#2c7a7b",
-    color: "white",
-    float: "right",
-    transition: "background-color 0.2s",
+  const successStyle: React.CSSProperties = {
+    backgroundColor: "#e8f5e9",
+    color: "#2e7d32",
+    padding: "1rem",
+    borderRadius: "25px",
+    marginBottom: "1rem",
+    textAlign: "center",
   };
 
-  const messageStyle: React.CSSProperties = {
-    padding: "1rem 1.5rem",
-    borderRadius: "6px",
-    marginBottom: "1.5rem",
-    fontWeight: "500",
-    fontSize: "0.95rem",
-  };
+  // Format registered courses data
+  const formattedRegistered = registeredCourses.map((enrollment: any) => {
+    const section = enrollment.section;
+    const course = section?.course;
+    return {
+      enrollmentId: enrollment.enrollment_id,
+      sectionId: section?.section_id,
+      courseId: course?.course_id || "",
+      courseName: course?.course_name || "",
+      className: section?.class_name || "",
+      credits: course?.credits || 0,
+      schedule: section?.schedule || "",
+      registered: `${section?.current_students || 0}/${section?.max_students || 0}`,
+    };
+  });
 
-  const successMessageStyle: React.CSSProperties = {
-    ...messageStyle,
-    backgroundColor: "#d4edda",
-    color: "#155724",
-    border: "1px solid #c3e6cb",
-  };
-
-  const errorMessageStyle: React.CSSProperties = {
-    ...messageStyle,
-    backgroundColor: "#f8d7da",
-    color: "#721c24",
-    border: "1px solid #f5c6cb",
-  };
-
-  const checkboxStyle: React.CSSProperties = {
-    width: "18px",
-    height: "18px",
-    cursor: "pointer",
-  };
+  // Format available courses data
+  const formattedAvailable = availableCourses.map((section: any) => {
+    const course = section.course;
+    return {
+      sectionId: section.section_id,
+      courseId: course?.course_id || "",
+      courseName: course?.course_name || "",
+      className: section.class_name || "",
+      credits: course?.credits || 0,
+      schedule: section.schedule || "",
+      registered: `${section.current_students || 0}/${section.max_students || 0}`,
+    };
+  });
 
   return (
     <div style={containerStyle}>
-      <Header 
-        signed_in={signed_in} 
-        language={currentLanguage} 
-        onLanguageChange={toggleLanguage} 
-        user_flag={user_flag === "student" ? 1 : 0}
+      <Header
+        signed_in={signed_in}
+        user_flag={user_flag}
+        language={currentLanguage}
+        onLanguageChange={toggleLanguage}
         userId={userId}
       />
-      
       <main style={mainStyle}>
         {/* Filter Bar */}
         <div style={filterBarStyle}>
-          <button style={filterButtonStyle}>{schoolYear}</button>
-          <button style={filterButtonStyle}>{semester}</button>
-          <button style={filterButtonStyle}>{program}</button>
+          <button
+            style={filters.year === "2025-2026" ? activeFilterButtonStyle : filterButtonStyle}
+            onClick={() => handleFilterClick("year", "2025-2026")}
+          >
+            2025 - 2026
+          </button>
+          <button
+            style={filters.semester === "1" ? activeFilterButtonStyle : filterButtonStyle}
+            onClick={() => handleFilterClick("semester", "1")}
+          >
+            Semester 1
+          </button>
+          <button
+            style={filters.program === "APCS" ? activeFilterButtonStyle : filterButtonStyle}
+            onClick={() => handleFilterClick("program", "APCS")}
+          >
+            Advanced Program (APCS)
+          </button>
         </div>
 
-        {/* Messages */}
-        {message && (
-          <div style={message.type === 'success' ? successMessageStyle : errorMessageStyle}>
-            {message.text}
+        {/* Search Bar */}
+        <Form method="get" onSubmit={handleSearch} style={searchBarStyle}>
+          <input
+            type="text"
+            name="search"
+            placeholder={currentLanguage === "en" ? "Search course" : "Tìm kiếm khóa học"}
+            defaultValue={filters.search}
+            style={searchInputStyle}
+          />
+          <img
+            src="/icons/search.png"
+            alt="Search"
+            style={{ width: "24px", height: "24px", cursor: "pointer" }}
+            onClick={(e) => {
+              e.preventDefault();
+              (e.currentTarget.closest("form") as HTMLFormElement)?.requestSubmit();
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        </Form>
+
+        {loadError && <div style={errorStyle}>{loadError}</div>}
+        {actionData?.error && <div style={errorStyle}>{actionData.error}</div>}
+        {actionData?.success && (
+          <div style={successStyle}>
+            {currentLanguage === "en" ? "Operation completed successfully!" : "Thao tác hoàn tất thành công!"}
           </div>
         )}
 
-        {error && (
-          <div style={errorMessageStyle}>
-            {error}
-          </div>
-        )}
-
-        {/* Registered Courses Table */}
-        <h2 style={sectionTitleStyle}>Registered Courses</h2>
-        <div style={tableContainerStyle}>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, ...colCourseIdStyle }}>Course ID</th>
-                <th style={{ ...thStyle, ...colCourseNameStyle }}>Course name</th>
-                <th style={{ ...thStyle, ...colClassStyle }}>Class</th>
-                <th style={{ ...thStyle, ...colCreditsStyle }}>Credits</th>
-                <th style={{ ...thStyle, ...colScheduleStyle }}>Schedule</th>
-                <th style={{ ...thStyle, ...colRegisteredStyle }}>Registered</th>
-                {isRegistrationOpen && <th style={{ ...thStyle, ...colActionStyle }}>Cancel</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {enrolledSections.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ ...tdStyle, textAlign: "center", fontStyle: "italic", color: "#868e96" }}>
-                    No registered courses
-                  </td>
-                </tr>
-              ) : (
-                enrolledSections.map((section: any) => {
-                  const courseId = section.course_id || 'N/A';
-                  const courseName = section.course_name || 'N/A';
-                  const classCode = section.section_id || 'N/A';
-                  
-                  return (
-                    <tr key={section.section_id}>
-                      <td style={{ ...tdStyle, ...colCourseIdStyle }}>{courseId}</td>
-                      <td style={{ ...tdStyle, ...colCourseNameStyle }} title={courseName}>{courseName}</td>
-                      <td style={{ ...tdStyle, ...colClassStyle }}>{classCode}</td>
-                      <td style={{ ...tdCenterStyle, ...colCreditsStyle }}>4</td>
-                      <td style={{ ...tdStyle, ...colScheduleStyle }}>-</td>
-                      <td style={{ ...tdCenterStyle, ...colRegisteredStyle }}>-</td>
-                      {isRegistrationOpen && (
-                        <td style={{ ...tdCenterStyle, ...colActionStyle }}>
-                          <input
-                            type="checkbox"
-                            style={checkboxStyle}
-                            checked={selectedToCancel.includes(section.section_id)}
-                            onChange={() => handleCancelToggle(section.section_id)}
-                          />
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-          {isRegistrationOpen && (
-            <button
-              id="cancel_button"
-              style={confirmButtonStyle}
-              onClick={handleCancelConfirm}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#234e52"}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2c7a7b"}
-            >
-              Confirm
-            </button>
-          )}
-          <div style={{ clear: "both" }}></div>
-        </div>
-
-        {/* Available Courses Table - Only show if registration is open */}
-        {isRegistrationOpen && (
-          <>
-            <h2 style={sectionTitleStyle}>Available Courses</h2>
-            <div style={tableContainerStyle}>
+        {/* Registered Courses Section */}
+        <div style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>
+            {currentLanguage === "en" ? "Registered Courses" : "Khóa học đã đăng ký"}
+          </h2>
+          {formattedRegistered.length === 0 ? (
+            <p style={{ color: "#565656" }}>
+              {currentLanguage === "en" ? "No registered courses." : "Chưa có khóa học nào được đăng ký."}
+            </p>
+          ) : (
+            <>
               <table style={tableStyle}>
                 <thead>
                   <tr>
-                    <th style={{ ...thStyle, ...colCourseIdStyle }}>Course ID</th>
-                    <th style={{ ...thStyle, ...colCourseNameStyle }}>Course name</th>
-                    <th style={{ ...thStyle, ...colClassStyle }}>Class</th>
-                    <th style={{ ...thStyle, ...colCreditsStyle }}>Credits</th>
-                    <th style={{ ...thStyle, ...colScheduleStyle }}>Schedule</th>
-                    <th style={{ ...thStyle, ...colRegisteredStyle }}>Registered</th>
-                    <th style={{ ...thStyle, ...colActionStyle }}>Enroll</th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Course ID" : "Mã khóa học"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Course name" : "Tên khóa học"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Class" : "Lớp"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Credits" : "Tín chỉ"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Schedule" : "Lịch học"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Registered" : "Đã đăng ký"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Cancel" : "Hủy"}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {availableSections.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} style={{ ...tdStyle, textAlign: "center", fontStyle: "italic", color: "#868e96" }}>
-                        No available courses
+                  {formattedRegistered.map((course) => (
+                    <tr key={course.enrollmentId} style={tableRowStyle}>
+                      <td style={tableCellStyle}>{course.courseId}</td>
+                      <td style={tableCellStyle}>{course.courseName}</td>
+                      <td style={tableCellStyle}>{course.className}</td>
+                      <td style={tableCellStyle}>{course.credits}</td>
+                      <td style={tableCellStyle}>{course.schedule}</td>
+                      <td style={tableCellStyle}>{course.registered}</td>
+                      <td style={tableCellStyle}>
+                        <div
+                          style={
+                            selectedCancel.has(course.sectionId)
+                              ? checkboxCheckedStyle
+                              : checkboxContainerStyle
+                          }
+                          onClick={() => handleCheckboxChange(course.sectionId, "cancel")}
+                        >
+                          {selectedCancel.has(course.sectionId) && (
+                            <span style={{ color: "#FFFFFF", fontSize: "0.8rem" }}>✓</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                  ) : (
-                    availableSections.map((section: any) => {
-                      const courseId = section.course?.[0]?.course_id || section.course?.course_id || 'N/A';
-                      const courseName = section.course?.[0]?.course_name || section.course?.course_name || 'N/A';
-                      const classCode = section.section_id || 'N/A';
-                      
-                      return (
-                        <tr key={section.section_id}>
-                          <td style={{ ...tdStyle, ...colCourseIdStyle }}>{courseId}</td>
-                          <td style={{ ...tdStyle, ...colCourseNameStyle }} title={courseName}>{courseName}</td>
-                          <td style={{ ...tdStyle, ...colClassStyle }}>{classCode}</td>
-                          <td style={{ ...tdCenterStyle, ...colCreditsStyle }}>4</td>
-                          <td style={{ ...tdStyle, ...colScheduleStyle }}>-</td>
-                          <td style={{ ...tdCenterStyle, ...colRegisteredStyle }}>-</td>
-                          <td style={{ ...tdCenterStyle, ...colActionStyle }}>
-                            <input
-                              type="checkbox"
-                              style={checkboxStyle}
-                              checked={selectedToEnroll.includes(section.section_id)}
-                              onChange={() => handleEnrollToggle(section.section_id)}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
+                  ))}
                 </tbody>
               </table>
-              <button
-                id="enroll_button"
-                style={confirmButtonStyle}
-                onClick={handleEnrollConfirm}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#234e52"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2c7a7b"}
-              >
-                Confirm
-              </button>
-              <div style={{ clear: "both" }}></div>
-            </div>
-          </>
-        )}
-      </main>
+              <Form method="post">
+                <input type="hidden" name="actionType" value="cancel" />
+                <input type="hidden" name="userId" value={userId} />
+                {Array.from(selectedCancel).map((sectionId) => (
+                  <input key={sectionId} type="hidden" name="sectionIds" value={sectionId} />
+                ))}
+                <button
+                  type="submit"
+                  style={confirmButtonStyle}
+                  disabled={selectedCancel.size === 0}
+                  onClick={handleConfirmCancel}
+                >
+                  {currentLanguage === "en" ? "Confirm" : "Xác nhận"}
+                </button>
+              </Form>
+            </>
+          )}
+        </div>
 
+        {/* Available Courses Section */}
+        <div style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>
+            {currentLanguage === "en" ? "Available Courses" : "Khóa học có sẵn"}
+          </h2>
+          {formattedAvailable.length === 0 ? (
+            <p style={{ color: "#565656" }}>
+              {currentLanguage === "en" ? "No available courses." : "Không có khóa học nào có sẵn."}
+            </p>
+          ) : (
+            <>
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Course ID" : "Mã khóa học"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Course name" : "Tên khóa học"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Class" : "Lớp"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Credits" : "Tín chỉ"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Schedule" : "Lịch học"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Registered" : "Đã đăng ký"}
+                    </th>
+                    <th style={tableHeaderStyle}>
+                      {currentLanguage === "en" ? "Enroll" : "Đăng ký"}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formattedAvailable.map((course) => (
+                    <tr key={course.sectionId} style={tableRowStyle}>
+                      <td style={tableCellStyle}>{course.courseId}</td>
+                      <td style={tableCellStyle}>{course.courseName}</td>
+                      <td style={tableCellStyle}>{course.className}</td>
+                      <td style={tableCellStyle}>{course.credits}</td>
+                      <td style={tableCellStyle}>{course.schedule}</td>
+                      <td style={tableCellStyle}>{course.registered}</td>
+                      <td style={tableCellStyle}>
+                        <div
+                          style={
+                            selectedEnroll.has(course.sectionId)
+                              ? checkboxCheckedStyle
+                              : checkboxContainerStyle
+                          }
+                          onClick={() => handleCheckboxChange(course.sectionId, "enroll")}
+                        >
+                          {selectedEnroll.has(course.sectionId) && (
+                            <span style={{ color: "#FFFFFF", fontSize: "0.8rem" }}>✓</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Form method="post">
+                <input type="hidden" name="actionType" value="enroll" />
+                <input type="hidden" name="userId" value={userId} />
+                {Array.from(selectedEnroll).map((sectionId) => (
+                  <input key={sectionId} type="hidden" name="sectionIds" value={sectionId} />
+                ))}
+                <button
+                  type="submit"
+                  style={confirmButtonStyle}
+                  disabled={selectedEnroll.size === 0}
+                  onClick={handleConfirmEnroll}
+                >
+                  {currentLanguage === "en" ? "Confirm" : "Xác nhận"}
+                </button>
+              </Form>
+            </>
+          )}
+        </div>
+      </main>
       <Footer language={currentLanguage} />
     </div>
   );
