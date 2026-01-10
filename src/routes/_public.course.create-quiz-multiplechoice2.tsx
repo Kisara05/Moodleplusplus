@@ -53,6 +53,7 @@ export default function CreateQuizMultipleChoice2() {
   const [numQuestions, setNumQuestions] = useState(25);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [questions, setQuestions] = useState<Question[]>(() => {
     const initial: Question[] = [];
     for (let i = 0; i < 25; i++) {
@@ -92,8 +93,28 @@ export default function CreateQuizMultipleChoice2() {
 
   const handleAddChoice = (questionIndex: number) => {
     const newQuestions = [...questions];
-    newQuestions[questionIndex].choices.push("");
-    setQuestions(newQuestions);
+    if (newQuestions[questionIndex].choices.length < 10) {
+      newQuestions[questionIndex].choices.push("");
+      setQuestions(newQuestions);
+    }
+  };
+
+  const handleRemoveChoice = (questionIndex: number) => {
+    const newQuestions = [...questions];
+    const currentChoices = newQuestions[questionIndex].choices;
+    if (currentChoices.length > 2) {
+      const lastIndex = currentChoices.length - 1;
+      // If removing the correct answer, reset it
+      if (newQuestions[questionIndex].correctAnswer === lastIndex) {
+        newQuestions[questionIndex].correctAnswer = null;
+      } else if (newQuestions[questionIndex].correctAnswer !== null && 
+                 newQuestions[questionIndex].correctAnswer > lastIndex) {
+        // If correct answer index is beyond the last index, adjust it
+        newQuestions[questionIndex].correctAnswer = null;
+      }
+      newQuestions[questionIndex].choices.pop();
+      setQuestions(newQuestions);
+    }
   };
 
   const handleChoiceChange = (questionIndex: number, choiceIndex: number, value: string) => {
@@ -110,11 +131,9 @@ export default function CreateQuizMultipleChoice2() {
 
   const isQuestionComplete = (index: number): boolean => {
     const q = questions[index];
-    return (
-      q.choices.length >= 2 &&
-      q.choices.every(c => c.trim() !== "") &&
-      q.correctAnswer !== null
-    );
+    // For multiplechoice2, choices are static labels (A, B, C, D, etc.)
+    // Need at least 2 choices and correct answer selected
+    return q.choices.length >= 2 && q.correctAnswer !== null;
   };
 
   const allQuestionsComplete = (): boolean => {
@@ -136,6 +155,11 @@ export default function CreateQuizMultipleChoice2() {
   };
 
   const handleCancel = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelDialog(false);
     navigate(`/courses/${sectionId}?signed_in=1&user_flag=${user_flag}`);
   };
 
@@ -231,37 +255,60 @@ export default function CreateQuizMultipleChoice2() {
     marginBottom: "1rem",
   };
 
-  const choicesContainerStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+  const choicesRowStyle: React.CSSProperties = {
+    display: "flex",
     gap: "1rem",
+    alignItems: "center",
     marginBottom: "1rem",
+    flexWrap: "wrap",
   };
 
-  const choiceInputStyle = (isSelected: boolean): React.CSSProperties => ({
-    width: "100%",
+  const choiceBoxStyle = (isSelected: boolean): React.CSSProperties => ({
+    flex: "1",
+    minWidth: "150px",
     padding: "0.75rem",
     fontSize: "1rem",
     border: isSelected ? "2px solid #0A853F" : "2px solid #D9D9D9",
     borderRadius: "25px",
-    outline: "none",
     fontFamily: "inherit",
     backgroundColor: isSelected ? "#0A853F" : "#FFFFFF",
     color: isSelected ? "#FFFFFF" : "#000000",
-    cursor: "text",
+    cursor: "pointer",
+    textAlign: "center",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "500",
   });
 
-  const addChoiceButtonStyle: React.CSSProperties = {
-    padding: "0.5rem 1rem",
+  const addChoiceButtonStyle = (disabled: boolean): React.CSSProperties => ({
+    padding: "0.75rem 1rem",
     backgroundColor: "#FFFFFF",
-    color: "#2C8B85",
-    border: "2px solid #2C8B85",
-    borderRadius: "8px",
+    color: disabled ? "#999" : "#2C8B85",
+    border: `2px solid ${disabled ? "#D9D9D9" : "#2C8B85"}`,
+    borderRadius: "25px",
     fontSize: "0.9rem",
     fontWeight: "500",
-    cursor: "pointer",
-    alignSelf: "flex-start",
-  };
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    minWidth: "fit-content",
+    opacity: disabled ? 0.6 : 1,
+  });
+
+  const removeChoiceButtonStyle = (disabled: boolean): React.CSSProperties => ({
+    padding: "0.75rem 1rem",
+    backgroundColor: disabled ? "#D9D9D9" : "#FF6B35",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "25px",
+    fontSize: "0.9rem",
+    fontWeight: "500",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    minWidth: "fit-content",
+    opacity: disabled ? 0.6 : 1,
+    marginLeft: "0.5rem",
+  });
 
   const buttonContainerStyle: React.CSSProperties = {
     display: "flex",
@@ -376,26 +423,44 @@ export default function CreateQuizMultipleChoice2() {
                 {currentLanguage === "en" ? "Question" : "Câu hỏi"} {questionIndex + 1}
               </div>
               
-              <div style={choicesContainerStyle}>
-                {question.choices.map((choice, choiceIndex) => (
-                  <input
+              <div style={choicesRowStyle}>
+                {question.choices.slice(0, 4).map((choice, choiceIndex) => (
+                  <div
                     key={choiceIndex}
-                    type="text"
-                    value={choice}
-                    onChange={(e) => handleChoiceChange(questionIndex, choiceIndex, e.target.value)}
                     onClick={() => handleCorrectAnswerSelect(questionIndex, choiceIndex)}
-                    style={choiceInputStyle(question.correctAnswer === choiceIndex)}
-                    placeholder={`${getChoiceLabel(choiceIndex)}. ${currentLanguage === "en" ? "Insert one choice here" : "Nhập một lựa chọn"}`}
-                  />
+                    style={choiceBoxStyle(question.correctAnswer === choiceIndex)}
+                  >
+                    {getChoiceLabel(choiceIndex)}
+                  </div>
                 ))}
+                {question.choices.length > 4 && (
+                  <>
+                    {question.choices.slice(4).map((choice, choiceIndex) => (
+                      <div
+                        key={choiceIndex + 4}
+                        onClick={() => handleCorrectAnswerSelect(questionIndex, choiceIndex + 4)}
+                        style={choiceBoxStyle(question.correctAnswer === choiceIndex + 4)}
+                      >
+                        {getChoiceLabel(choiceIndex + 4)}
+                      </div>
+                    ))}
+                  </>
+                )}
+                <button
+                  style={addChoiceButtonStyle(question.choices.length >= 10)}
+                  onClick={() => handleAddChoice(questionIndex)}
+                  disabled={question.choices.length >= 10}
+                >
+                  {currentLanguage === "en" ? "Add more choices" : "Thêm lựa chọn"}
+                </button>
+                <button
+                  style={removeChoiceButtonStyle(question.choices.length <= 2)}
+                  onClick={() => handleRemoveChoice(questionIndex)}
+                  disabled={question.choices.length <= 2}
+                >
+                  {currentLanguage === "en" ? "Remove a choice" : "Xóa lựa chọn"}
+                </button>
               </div>
-
-              <button
-                style={addChoiceButtonStyle}
-                onClick={() => handleAddChoice(questionIndex)}
-              >
-                {currentLanguage === "en" ? "Add more choices" : "Thêm lựa chọn"}
-              </button>
             </div>
           ))}
         </div>
@@ -453,6 +518,33 @@ export default function CreateQuizMultipleChoice2() {
             <button style={dialogButtonStyle} onClick={() => setShowErrorDialog(false)}>
               {currentLanguage === "en" ? "OK" : "Đồng ý"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Dialog */}
+      {showCancelDialog && (
+        <div style={dialogOverlayStyle} onClick={() => setShowCancelDialog(false)}>
+          <div style={dialogStyle} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>
+              {currentLanguage === "en" ? "Confirm Cancel" : "Xác nhận hủy"}
+            </h3>
+            <p>
+              {currentLanguage === "en"
+                ? "Are you sure you want to cancel? All unsaved changes will be lost."
+                : "Bạn có chắc chắn muốn hủy? Tất cả thay đổi chưa lưu sẽ bị mất."}
+            </p>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <button style={dialogButtonStyle} onClick={handleConfirmCancel}>
+                {currentLanguage === "en" ? "Yes, Cancel" : "Có, hủy"}
+              </button>
+              <button
+                style={{ ...dialogButtonStyle, backgroundColor: "#D9D9D9", color: "#000000" }}
+                onClick={() => setShowCancelDialog(false)}
+              >
+                {currentLanguage === "en" ? "No" : "Không"}
+              </button>
+            </div>
           </div>
         </div>
       )}
