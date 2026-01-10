@@ -71,17 +71,20 @@ export function Footer({ language = "en" }: FooterProps) {
         </div>
         <div style={rightSectionStyle}>
           <div style={titleStyle}>Contact Us</div>
+          <a href="mailto:ndhthinh23@apcs.fitus.edu.vn" style={emailStyle}>
+            ndhthinh23@apcs.fitus.edu.vn
+          </a>
           <a href="mailto:tvutrabaja@gmail.com" style={emailStyle}>
             tvutrabaja@gmail.com
+          </a>
+          <a href="mailto:hoangdonthienhoa@gmail.com" style={emailStyle}>
+            hoangdonthienhoa@gmail.com
           </a>
           <a href="mailto:vietthanh2005@gmail.com" style={emailStyle}>
             vietthanh2005@gmail.com
           </a>
           <a href="mailto:madguyinthehouse@gmail.com" style={emailStyle}>
             madguyinthehouse@gmail.com
-          </a>
-          <a href="mailto:hoangdonthienhoa@gmail.com" style={emailStyle}>
-            hoangdonthienhoa@gmail.com
           </a>
         </div>
       </footer>
