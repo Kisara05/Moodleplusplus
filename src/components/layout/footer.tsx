@@ -77,12 +77,6 @@ export function Footer({ language = "en" }: FooterProps) {
           <a href="mailto:vietthanh2005@gmail.com" style={emailStyle}>
             vietthanh2005@gmail.com
           </a>
-          <a href="mailto:vietthanh2005@gmail.com" style={emailStyle}>
-            vietthanh2005@gmail.com
-          </a>
-          <a href="mailto:tvutrabaja@gmail.com" style={emailStyle}>
-            tvutrabaja@gmail.com
-          </a>
         </div>
       </footer>
       <div style={footerBottomStyle}>
