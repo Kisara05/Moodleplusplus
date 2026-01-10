@@ -47,10 +47,10 @@ export default function AddActivity() {
   const handleActivityClick = (type: number) => {
     if (type === 4) {
       // Quiz - navigate to quiz creation
-      navigate(`/course/create-quiz/${sectionId}?signed_in=1&user_flag=${user_flag}`);
+      navigate(`/courses/${sectionId}/create-quiz/?signed_in=1&user_flag=${user_flag}`);
     } else {
       // Assignment (1), File (2), Folder (3) - navigate to upload resource
-      navigate(`/course/upload-resource/${sectionId}?signed_in=1&user_flag=${user_flag}&type=${type}`);
+      navigate(`/courses/${sectionId}/upload-resource/?signed_in=1&user_flag=${user_flag}&type=${type}`);
     }
   };
 
