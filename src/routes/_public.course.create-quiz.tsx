@@ -149,8 +149,6 @@ export default function CreateQuiz() {
   const [selectFiles, setSelectFiles] = useState<"yes" | "no">("no");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>("");
-  const [setTimeLimit, setSetTimeLimit] = useState(true);
-  const [timeValidationError, setTimeValidationError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleLanguage = () => {
@@ -174,38 +172,6 @@ export default function CreateQuiz() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
-
-  const validateTimeRange = () => {
-    const publishDateInput = document.querySelector('input[name="publishDate"]') as HTMLInputElement;
-    const publishHourInput = document.querySelector('input[name="publishHour"]') as HTMLInputElement;
-    const publishMinuteInput = document.querySelector('input[name="publishMinute"]') as HTMLInputElement;
-    const durationDateInput = document.querySelector('input[name="durationDate"]') as HTMLInputElement;
-    const durationHourInput = document.querySelector('input[name="durationHour"]') as HTMLInputElement;
-    const durationMinuteInput = document.querySelector('input[name="durationMinute"]') as HTMLInputElement;
-
-    if (!publishDateInput || !durationDateInput) return;
-
-    const publishDate = new Date(publishDateInput.value);
-    publishDate.setHours(parseInt(publishHourInput?.value || "0"), parseInt(publishMinuteInput?.value || "0"), 0);
-
-    const durationDate = new Date(durationDateInput.value);
-    durationDate.setHours(parseInt(durationHourInput?.value || "0"), parseInt(durationMinuteInput?.value || "0"), 0);
-
-    if (durationDate < publishDate) {
-      setTimeValidationError(currentLanguage === "en" 
-        ? "Duration time must be after publish time" 
-        : "Thời lượng phải sau thời gian xuất bản");
-      return false;
-    } else {
-      setTimeValidationError("");
-      return true;
-    }
-  };
-
-  const handleTimeChange = () => {
-    // Validate when time inputs change
-    setTimeout(validateTimeRange, 100);
   };
 
   const containerStyle: React.CSSProperties = {
@@ -785,7 +751,6 @@ export default function CreateQuiz() {
                       min="0"
                       max="23"
                       style={timeInputStyle}
-                      onChange={handleTimeChange}
                     />
                     <span>:</span>
                     <input
@@ -795,7 +760,6 @@ export default function CreateQuiz() {
                       min="0"
                       max="59"
                       style={timeInputStyle}
-                      onChange={handleTimeChange}
                     />
                     <span>:</span>
                     <input
@@ -805,14 +769,12 @@ export default function CreateQuiz() {
                       min="0"
                       max="59"
                       style={timeInputStyle}
-                      onChange={handleTimeChange}
                     />
                     <input
                       type="date"
                       name="publishDate"
                       defaultValue="2025-12-12"
                       style={dateInputStyle}
-                      onChange={handleTimeChange}
                     />
                   </div>
                 </div>
@@ -830,7 +792,6 @@ export default function CreateQuiz() {
                       min="0"
                       max="23"
                       style={timeInputStyle}
-                      onChange={handleTimeChange}
                     />
                     <span>:</span>
                     <input
@@ -840,7 +801,6 @@ export default function CreateQuiz() {
                       min="0"
                       max="59"
                       style={timeInputStyle}
-                      onChange={handleTimeChange}
                     />
                     <span>:</span>
                     <input
@@ -850,21 +810,14 @@ export default function CreateQuiz() {
                       min="0"
                       max="59"
                       style={timeInputStyle}
-                      onChange={handleTimeChange}
                     />
                     <input
                       type="date"
                       name="durationDate"
                       defaultValue="2025-12-12"
                       style={dateInputStyle}
-                      onChange={handleTimeChange}
                     />
                   </div>
-                  {timeValidationError && (
-                    <div style={{ color: "#FF0000", fontSize: "0.9rem", marginTop: "0.5rem" }}>
-                      {timeValidationError}
-                    </div>
-                  )}
                 </div>
 
                 {/* Time Limit */}
@@ -873,44 +826,41 @@ export default function CreateQuiz() {
                     <input
                       type="checkbox"
                       name="setTimeLimit"
-                      checked={setTimeLimit}
-                      onChange={(e) => setSetTimeLimit(e.target.checked)}
+                      defaultChecked
                       style={checkboxStyle}
                     />
                     <span>
                       {currentLanguage === "en" ? "Set time limit" : "Đặt giới hạn thời gian"}
                     </span>
                   </label>
-                  {setTimeLimit && (
-                    <div style={{ ...timeInputGroupStyle, marginTop: "0.5rem" }}>
-                      <input
-                        type="number"
-                        name="timeLimitHour"
-                        defaultValue="00"
-                        min="0"
-                        max="23"
-                        style={timeInputStyle}
-                      />
-                      <span>:</span>
-                      <input
-                        type="number"
-                        name="timeLimitMinute"
-                        defaultValue="45"
-                        min="0"
-                        max="59"
-                        style={timeInputStyle}
-                      />
-                      <span>:</span>
-                      <input
-                        type="number"
-                        name="timeLimitSecond"
-                        defaultValue="00"
-                        min="0"
-                        max="59"
-                        style={timeInputStyle}
-                      />
-                    </div>
-                  )}
+                  <div style={{ ...timeInputGroupStyle, marginTop: "0.5rem" }}>
+                    <input
+                      type="number"
+                      name="timeLimitHour"
+                      defaultValue="00"
+                      min="0"
+                      max="23"
+                      style={timeInputStyle}
+                    />
+                    <span>:</span>
+                    <input
+                      type="number"
+                      name="timeLimitMinute"
+                      defaultValue="45"
+                      min="0"
+                      max="59"
+                      style={timeInputStyle}
+                    />
+                    <span>:</span>
+                    <input
+                      type="number"
+                      name="timeLimitSecond"
+                      defaultValue="00"
+                      min="0"
+                      max="59"
+                      style={timeInputStyle}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -918,15 +868,7 @@ export default function CreateQuiz() {
 
           {/* Action Buttons */}
           <div style={buttonGroupStyle}>
-            <button 
-              type="submit" 
-              style={saveButtonStyle}
-              onClick={(e) => {
-                if (!validateTimeRange()) {
-                  e.preventDefault();
-                }
-              }}
-            >
+            <button type="submit" style={saveButtonStyle}>
               {answerType === "multiple_choice"
                 ? (currentLanguage === "en" ? "Next" : "Tiếp theo")
                 : (currentLanguage === "en" ? "Save and return to course" : "Lưu và quay lại khóa học")
