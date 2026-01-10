@@ -86,7 +86,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function CourseRegistration() {
   const loaderData = useLoaderData<typeof loader>();
-  const { signed_in, user_flag, language, userId, availableSections, enrolledSections } = loaderData;
+  const { signed_in, user_flag, language, userId, availableSections: initialAvailable, enrolledSections: initialEnrolled } = loaderData;
   const error = (loaderData as any).error;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -97,9 +97,9 @@ export default function CourseRegistration() {
   const [semester, setSemester] = useState("Semester 1");
   const [program, setProgram] = useState("Advanced Program (APCS)");
   
-  // State for checkboxes
-  const [selectedToCancel, setSelectedToCancel] = useState<string[]>([]);
-  const [selectedToEnroll, setSelectedToEnroll] = useState<string[]>([]);
+  // State for courses - now managed locally
+  const [enrolledSections, setEnrolledSections] = useState<any[]>(initialEnrolled);
+  const [availableSections, setAvailableSections] = useState<any[]>(initialAvailable);
   
   // State for messages
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -115,91 +115,42 @@ export default function CourseRegistration() {
     setSearchParams(newParams);
   };
 
-  // Handle cancel checkbox toggle
-  const handleCancelToggle = (sectionId: string) => {
-    setSelectedToCancel(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
-  };
-
-  // Handle enroll checkbox toggle
-  const handleEnrollToggle = (sectionId: string) => {
-    setSelectedToEnroll(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
-  };
-
-  // Handle cancel confirmation
-  const handleCancelConfirm = async () => {
-    if (selectedToCancel.length === 0) {
-      setMessage({ type: 'error', text: 'No courses were chosen to cancel.' });
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to cancel ${selectedToCancel.length} course(s)?`)) {
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("_action", "unenroll");
-    formData.append("userId", userId);
-    formData.append("sectionIds", selectedToCancel.join(","));
-
-    try {
-      const response = await fetch(window.location.pathname + window.location.search, {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message });
-        setSelectedToCancel([]);
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        setMessage({ type: 'error', text: result.error });
+  // Handle checkbox toggle - moves courses between tables
+  const handleCourseToggle = async (sectionId: string, isEnrolled: boolean) => {
+    if (isEnrolled) {
+      // Move from enrolled to available
+      const courseToMove = enrolledSections.find(s => s.section_id === sectionId);
+      if (courseToMove) {
+        setEnrolledSections(prev => prev.filter(s => s.section_id !== sectionId));
+        // Transform the course to match available format if needed
+        const transformedCourse = {
+          ...courseToMove,
+          course: courseToMove.course_id ? [{
+            course_id: courseToMove.course_id,
+            course_name: courseToMove.course_name
+          }] : courseToMove.course
+        };
+        setAvailableSections(prev => [...prev, transformedCourse]);
+        
+        // TODO: Backend call to unenroll
+        // Store action for later backend implementation: unenroll(userId, sectionId)
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to process cancellation' });
-    }
-  };
-
-  // Handle enroll confirmation
-  const handleEnrollConfirm = async () => {
-    if (selectedToEnroll.length === 0) {
-      setMessage({ type: 'error', text: 'No courses were chosen to enroll.' });
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to enroll in ${selectedToEnroll.length} course(s)?`)) {
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("_action", "enroll");
-    formData.append("userId", userId);
-    formData.append("sectionIds", selectedToEnroll.join(","));
-
-    try {
-      const response = await fetch(window.location.pathname + window.location.search, {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message });
-        setSelectedToEnroll([]);
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        setMessage({ type: 'error', text: result.error });
+    } else {
+      // Move from available to enrolled
+      const courseToMove = availableSections.find(s => s.section_id === sectionId);
+      if (courseToMove) {
+        setAvailableSections(prev => prev.filter(s => s.section_id !== sectionId));
+        // Transform the course to match enrolled format
+        const transformedCourse = {
+          ...courseToMove,
+          course_id: courseToMove.course?.[0]?.course_id || courseToMove.course?.course_id || courseToMove.course_id,
+          course_name: courseToMove.course?.[0]?.course_name || courseToMove.course?.course_name || courseToMove.course_name
+        };
+        setEnrolledSections(prev => [...prev, transformedCourse]);
+        
+        // TODO: Backend call to enroll
+        // Store action for later backend implementation: enroll(userId, sectionId)
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to process enrollment' });
     }
   };
 
@@ -337,6 +288,7 @@ export default function CourseRegistration() {
     width: "18px",
     height: "18px",
     cursor: "pointer",
+    accentColor: "#28a745", // Green color for checkboxes
   };
 
   return (
@@ -411,8 +363,8 @@ export default function CourseRegistration() {
                           <input
                             type="checkbox"
                             style={checkboxStyle}
-                            checked={selectedToCancel.includes(section.section_id)}
-                            onChange={() => handleCancelToggle(section.section_id)}
+                            checked={true}
+                            onChange={() => handleCourseToggle(section.section_id, true)}
                           />
                         </td>
                       )}
@@ -422,17 +374,6 @@ export default function CourseRegistration() {
               )}
             </tbody>
           </table>
-          {isRegistrationOpen && (
-            <button
-              id="cancel_button"
-              style={confirmButtonStyle}
-              onClick={handleCancelConfirm}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#234e52"}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2c7a7b"}
-            >
-              Confirm
-            </button>
-          )}
           <div style={{ clear: "both" }}></div>
         </div>
 
@@ -478,8 +419,8 @@ export default function CourseRegistration() {
                             <input
                               type="checkbox"
                               style={checkboxStyle}
-                              checked={selectedToEnroll.includes(section.section_id)}
-                              onChange={() => handleEnrollToggle(section.section_id)}
+                              checked={false}
+                              onChange={() => handleCourseToggle(section.section_id, false)}
                             />
                           </td>
                         </tr>
@@ -488,15 +429,6 @@ export default function CourseRegistration() {
                   )}
                 </tbody>
               </table>
-              <button
-                id="enroll_button"
-                style={confirmButtonStyle}
-                onClick={handleEnrollConfirm}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#234e52"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2c7a7b"}
-              >
-                Confirm
-              </button>
               <div style={{ clear: "both" }}></div>
             </div>
           </>
